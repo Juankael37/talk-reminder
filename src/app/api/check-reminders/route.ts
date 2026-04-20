@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import nodemailer from 'nodemailer'
 
+export const dynamic = 'force-static'
+
 const getTransporter = () => {
   const email = process.env.EMAIL_USER
   const password = process.env.EMAIL_PASS
