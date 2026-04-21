@@ -25,12 +25,11 @@ export async function POST() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     
-    if (!supabaseUrl || !serviceKey) {
-      return NextResponse.json({ 
-        error: 'Missing environment variables',
-        hasUrl: !!supabaseUrl,
-        hasServiceKey: !!serviceKey
-      }, { status: 500 })
+    if (!supabaseUrl) {
+      return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SUPABASE_URL' }, { status: 500 })
+    }
+    if (!serviceKey) {
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY - add it in Vercel Dashboard > Settings > Environment Variables' }, { status: 500 })
     }
 
     const supabase = createClient(supabaseUrl, serviceKey)
