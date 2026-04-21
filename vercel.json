@@ -1,0 +1,16 @@
+{
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_SUPABASE_URL": "https://vfvhpuiklqayxznxmhgo.supabase.co",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmdmhwdWlrbHFheXh6bnhtaGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NTk4MTcsImV4cCI6MjA5MjIzNTgxN30.s1dpJJ_hJCFhh59pvRnZaBslNVg_zKKsXQ-4MEv0zYw",
+      "EMAIL_USER": "juankael37@gmail.com",
+      "EMAIL_PASS": "pqym chtb vhum szwm"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/check-reminders",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
