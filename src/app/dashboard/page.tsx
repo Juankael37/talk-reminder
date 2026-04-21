@@ -257,7 +257,7 @@ function AddTalkModal({
 }) {
   const [speakerName, setSpeakerName] = useState('')
   const [talkTitle, setTalkTitle] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('') // kept for compatibility
+  const [speakerEmail, setSpeakerEmail] = useState('')
   const [talkDate, setTalkDate] = useState('')
   const [talkTime, setTalkTime] = useState('')
   const [offsets, setOffsets] = useState({
@@ -290,6 +290,7 @@ function AddTalkModal({
           speaker_name: speakerName,
           talk_title: talkTitle || null,
           talk_date: talkDateTimeISO,
+          speaker_email: speakerEmail,
         })
         .select()
         .single()
@@ -388,6 +389,20 @@ function AddTalkModal({
               onChange={(e) => setTalkTitle(e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
               placeholder="Topic of the talk"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Speaker Email * (for reminders)
+            </label>
+            <input
+              type="email"
+              value={speakerEmail}
+              onChange={(e) => setSpeakerEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
+              placeholder="speaker@example.com"
+              required
             />
           </div>
 

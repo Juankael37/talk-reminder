@@ -47,12 +47,9 @@ export async function POST() {
 
     for (const rule of dueRules) {
       const talk = rule.talks
-      if (!talk || !talk.user_id) continue
+      if (!talk || !talk.speaker_email) continue
 
-      const { data: userData } = await supabase.auth.getUser(talk.user_id)
-      const userEmail = userData?.user?.email
-
-      if (!userEmail) continue
+      const speakerEmail = talk.speaker_email
 
       const message = `Reminder: ${talk.speaker_name}${talk.talk_title ? ` - "${talk.talk_title}"` : ''} is scheduled in ${rule.offset_label}.`
 
@@ -60,7 +57,7 @@ export async function POST() {
         if (transporter) {
           await transporter.sendMail({
             from: process.env.EMAIL_USER,
-            to: userEmail,
+            to: speakerEmail,
             subject: `Talk Reminder: ${talk.speaker_name}`,
             text: message,
           })
