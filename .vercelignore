@@ -1,0 +1,9 @@
+node_modules
+android
+.git
+.next
+.gitignore
+*.log
+.env*
+*.apk
+.vercelignore

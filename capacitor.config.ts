@@ -5,6 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Talk Reminder',
   webDir: '.next',
   server: {
+    url: 'https://talk-reminder-8f7uwaasp-juankael37s-projects.vercel.app',
     androidScheme: 'https'
   }
 };

@@ -257,7 +257,7 @@ function AddTalkModal({
 }) {
   const [speakerName, setSpeakerName] = useState('')
   const [talkTitle, setTalkTitle] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneNumber, setPhoneNumber] = useState('') // kept for compatibility
   const [talkDate, setTalkDate] = useState('')
   const [talkTime, setTalkTime] = useState('')
   const [offsets, setOffsets] = useState({
@@ -290,8 +290,6 @@ function AddTalkModal({
           speaker_name: speakerName,
           talk_title: talkTitle || null,
           talk_date: talkDateTimeISO,
-          phone_number: phoneNumber,
-          notification_channel: 'sms',
         })
         .select()
         .single()
@@ -390,20 +388,6 @@ function AddTalkModal({
               onChange={(e) => setTalkTitle(e.target.value)}
               className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
               placeholder="Topic of the talk"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Phone Number * (for SMS)
-            </label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition"
-              placeholder="+1234567890"
-              required
             />
           </div>
 

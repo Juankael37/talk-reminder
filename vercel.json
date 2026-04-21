@@ -12,5 +12,6 @@
       "path": "/api/check-reminders",
       "schedule": "0 8 * * *"
     }
-  ]
+  ],
+  "alias": "talk-reminder.vercel.app"
 }
