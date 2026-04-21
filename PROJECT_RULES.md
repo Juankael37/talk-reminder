@@ -76,7 +76,7 @@ Current Task: Deploy to Vercel, configure cron-job.org
 
 ## Key References
 - Database: Supabase PostgreSQL with RLS
-- SMS: Twilio API
+- Email: nodemailer (Gmail)
 - Mobile: Capacitor (Android/iOS)
 - Hosting: Vercel
 - Scheduling: cron-job.org

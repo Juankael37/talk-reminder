@@ -7,7 +7,7 @@ A mobile app (Android & iOS via Capacitor) that lets users schedule automated SM
 **Tech Stack:**
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth)
-- **SMS**: Twilio
+- **Email**: nodemailer (Gmail)
 - **Mobile Wrapper**: Capacitor
 - **Hosting**: Vercel
 - **Scheduling**: cron-job.org (free)
@@ -24,8 +24,8 @@ CREATE TABLE talks (
   speaker_name TEXT NOT NULL,
   talk_title TEXT,
   talk_date TIMESTAMPTZ NOT NULL,
-  notification_channel TEXT DEFAULT 'sms',
-  phone_number TEXT,
+  notification_channel TEXT DEFAULT 'email',
+  speaker_email TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
