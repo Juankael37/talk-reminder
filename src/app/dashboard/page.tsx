@@ -1,11 +1,8 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
-export const dynamicParams = true
-export const revalidate = 0
-export const fetchCache = 'force-no-store'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -30,14 +27,22 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [runningCheck, setRunningCheck] = useState(false)
-  const supabase = createClient()
   const router = useRouter()
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+
+  const getSupabase = () => {
+    if (!supabaseRef.current) {
+      supabaseRef.current = createClient()
+    }
+    return supabaseRef.current
+  }
 
   useEffect(() => {
     fetchTalks()
   }, [])
 
   const fetchTalks = async () => {
+    const supabase = getSupabase()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       router.push('/login')
@@ -66,7 +71,7 @@ export default function DashboardPage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await getSupabase().auth.signOut()
     router.push('/login')
   }
 
