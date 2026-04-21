@@ -69,11 +69,17 @@ export default function DashboardPage() {
     setRunningCheck(true)
     try {
       const response = await fetch('/api/check-reminders', { method: 'POST' })
+      const data = await response.json()
+      console.log('Check result:', data)
       if (response.ok) {
         fetchTalks()
+        alert(`Check complete: ${data.sent || 0} reminders processed`)
+      } else {
+        alert(`Error: ${data.error || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error running check:', error)
+      alert('Failed to run check')
     }
     setRunningCheck(false)
   }
@@ -295,7 +301,15 @@ function AddTalkModal({
         .select()
         .single()
 
-      if (talkError) throw talkError
+      if (talkError) {
+        console.error('Talk insert error:', talkError)
+        throw new Error(talkError.message)
+      }
+      if (!talk) {
+        console.error('No talk returned')
+        throw new Error('Failed to create talk')
+      }
+      console.log('Talk created:', talk)
 
       const rules = []
       if (offsets.oneWeek) {

@@ -1,31 +1,42 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import nodemailer from 'nodemailer'
+import { createClient } from '@supabase/supabase-js'
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 const getTransporter = () => {
   const email = process.env.EMAIL_USER
   const password = process.env.EMAIL_PASS
 
-  if (!email || !password) {
+    if (!email || !password) {
+    console.log('No email config - emails will be logged only')
     return null
   }
 
   return nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-      user: email,
-      pass: password,
-    },
+    auth: { user: email, pass: password },
   })
 }
 
 export async function POST() {
   try {
-    const supabase = await createClient()
+    // Check environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!supabaseUrl || !serviceKey) {
+      return NextResponse.json({ 
+        error: 'Missing environment variables',
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!serviceKey
+      }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey)
 
     const now = new Date().toISOString()
+    console.log('Checking for reminders at', now)
 
     const { data: dueRules, error: rulesError } = await supabase
       .from('reminder_rules')
@@ -33,8 +44,9 @@ export async function POST() {
       .eq('is_sent', false)
       .lte('scheduled_time', now)
 
+    console.log('Rules query result:', { count: dueRules?.length, error: rulesError })
+
     if (rulesError) {
-      console.error('Error fetching rules:', rulesError)
       return NextResponse.json({ error: rulesError.message }, { status: 500 })
     }
 
@@ -42,14 +54,19 @@ export async function POST() {
       return NextResponse.json({ message: 'No reminders due', sent: 0 })
     }
 
+    console.log('Found due rules:', dueRules.length)
+
     const transporter = getTransporter()
     let sentCount = 0
 
     for (const rule of dueRules) {
-      const talk = rule.talks
-      if (!talk || !talk.speaker_email) continue
+      const talk = (rule as any).talks
+      if (!talk?.speaker_email) {
+        console.log('Skipping rule - no speaker email:', rule.id)
+        continue
+      }
 
-      const speakerEmail = talk.speaker_email
+      console.log('Processing rule for talk:', talk.speaker_name, '->', talk.speaker_email)
 
       const message = `Reminder: ${talk.speaker_name}${talk.talk_title ? ` - "${talk.talk_title}"` : ''} is scheduled in ${rule.offset_label}.`
 
@@ -57,10 +74,11 @@ export async function POST() {
         if (transporter) {
           await transporter.sendMail({
             from: process.env.EMAIL_USER,
-            to: speakerEmail,
+            to: talk.speaker_email,
             subject: `Talk Reminder: ${talk.speaker_name}`,
             text: message,
           })
+          console.log('Email sent to:', talk.speaker_email)
         }
 
         await supabase
@@ -68,29 +86,20 @@ export async function POST() {
           .update({ is_sent: true })
           .eq('id', rule.id)
 
-        await supabase
-          .from('reminder_logs')
-          .insert({
-            rule_id: rule.id,
-            response: transporter ? 'Sent via Email' : 'Skipped (no email config)',
-          })
+        await supabase.from('reminder_logs').insert({
+          rule_id: rule.id,
+          response: 'Sent via Email',
+        })
 
         sentCount++
       } catch (emailError) {
         console.error('Email error:', emailError)
-
-        await supabase
-          .from('reminder_logs')
-          .insert({
-            rule_id: rule.id,
-            response: emailError instanceof Error ? emailError.message : 'Error',
-          })
       }
     }
 
     return NextResponse.json({ message: 'Done', sent: sentCount })
   } catch (error) {
-    console.error('Error in check-reminders:', error)
+    console.error('Error:', error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Internal error' },
       { status: 500 }
