@@ -77,19 +77,24 @@ export async function POST() {
 <head>
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
-    .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .header { background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; padding: 30px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
-    .header p { margin: 8px 0 0 0; opacity: 0.9; font-size: 14px; }
-    .content { padding: 30px; }
-    .greeting { font-size: 18px; color: #1E293B; margin-bottom: 20px; }
-    .talk-card { background-color: #F8FAFC; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #6366F1; }
-    .talk-title { font-size: 20px; font-weight: 600; color: #1E293B; margin: 0 0 15px 0; }
+    .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #6366F1, #4F46E5); color: white; padding: 40px 30px; text-align: center; }
+    .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+    .header p { margin: 8px 0 0 0; opacity: 0.9; font-size: 15px; }
+    .content { padding: 35px 30px; }
+    .greeting { font-size: 18px; color: #1E293B; margin-bottom: 24px; }
+    .talk-card { background-color: #F8FAFC; border-radius: 12px; padding: 24px; margin: 24px 0; border-left: 4px solid #6366F1; }
+    .talk-title { font-size: 20px; font-weight: 600; color: #1E293B; margin: 0 0 16px 0; }
     .details { margin: 0; padding: 0; list-style: none; }
-    .details li { margin: 10px 0; color: #64748B; font-size: 14px; }
+    .details li { margin: 12px 0; color: #64748B; font-size: 15px; }
     .details li strong { color: #1E293B; }
     .icon { margin-right: 8px; }
-    .footer { background-color: #F1F5F9; padding: 20px; text-align: center; font-size: 12px; color: #64748B; }
+    .messenger-section { background: linear-gradient(135deg, #f0f4ff, #e8eeff); border-radius: 12px; padding: 24px; margin-top: 28px; text-align: center; }
+    .messenger-section h3 { margin: 0 0 12px 0; color: #1E293B; font-size: 16px; font-weight: 600; }
+    .messenger-section p { margin: 0 0 16px 0; color: #64748B; font-size: 14px; line-height: 1.5; }
+    .messenger-btn { display: inline-block; background: linear-gradient(135deg, #0080FF, #0066CC); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; }
+    .messenger-btn:hover { background: linear-gradient(135deg, #0070ee, #0055bb); }
+    .footer { background-color: #F1F5F9; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
     .footer a { color: #6366F1; text-decoration: none; }
   </style>
 </head>
@@ -97,13 +102,13 @@ export async function POST() {
   <div class="container">
     <div class="header">
       <h1>⏰ Reminder</h1>
-      <p>Your talk is coming up!</p>
+      <p>Your upcoming talk</p>
     </div>
     <div class="content">
       <p class="greeting">Hi ${talk.speaker_name},</p>
       <p>This is a friendly reminder about your upcoming talk:</p>
       <div class="talk-card">
-        <h3 class="talk-title">📣 ${talk.talk_title || 'Talk'}</h3>
+        <h3 class="talk-title">${talk.talk_title || 'Talk'}</h3>
         <ul class="details">
           <li><span class="icon">📅</span><strong>Date:</strong> ${formattedDate}</li>
           <li><span class="icon">🕐</span><strong>Time:</strong> ${formattedTime}</li>
@@ -111,22 +116,29 @@ export async function POST() {
         </ul>
       </div>
       <p>We're looking forward to your presentation!</p>
+      
+      <div class="messenger-section">
+        <h3>💬 Prefer Messenger Reminders?</h3>
+        <p>Get future reminders delivered directly to your Facebook Messenger. Click below to subscribe — it's quick and easy!</p>
+        <a href="https://m.me/matereminder?text=subscribe" class="messenger-btn">Subscribe via Messenger</a>
+        <p style="margin-top: 12px; font-size: 12px; color: #94a3b8;">Click the button → Opens Messenger → Send "subscribe" to confirm</p>
+      </div>
     </div>
     <div class="footer">
-      <p>Sent via <a href="#">Talk Reminder</a></p>
+      <p>Sent via <a href="#">Mate Reminder</a></p>
     </div>
   </div>
 </body>
 </html>`
 
-      const plainText = `Hi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n\n"${talk.talk_title || 'Talk'}"\n\nDate: ${formattedDate}\nTime: ${formattedTime}\n\nWe're looking forward to your presentation!\n\n- Sent via Talk Reminder`
+      const plainText = `Hi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n\n"${talk.talk_title || 'Talk'}"\n\nDate: ${formattedDate}\nTime: ${formattedTime}\n\nWe're looking forward to your presentation!\n\n---\n💬 Prefer Messenger Reminders?\nGet future reminders via Facebook Messenger:\nhttps://m.me/matereminder?text=subscribe\n\n- Sent via Mate Reminder`
 
       try {
         if (transporter) {
           await transporter.sendMail({
             from: process.env.EMAIL_USER,
             to: talk.speaker_email,
-            subject: `Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
+            subject: `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
             html: htmlContent,
             text: plainText,
           })

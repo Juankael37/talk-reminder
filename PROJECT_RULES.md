@@ -1,4 +1,4 @@
-# Talk Reminder - Project Rules & Session Tracking
+# Mate Reminder - Project Rules & Session Tracking
 
 ## Current Project Status
 Last Updated: 2026-04-21

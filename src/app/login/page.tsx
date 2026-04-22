@@ -37,7 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold text-text-primary mb-2">
-            Talk Reminder
+            Mate Reminder
           </h1>
           <p className="text-text-secondary">Sign in to your account</p>
         </div>

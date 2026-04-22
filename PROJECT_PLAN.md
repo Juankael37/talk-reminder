@@ -1,8 +1,8 @@
-# Talk Reminder - Project Plan
+# Mate Reminder - Project Plan
 
 ## 1. Project Overview
 
-A mobile app (Android & iOS via Capacitor) that lets users schedule automated SMS reminders for talk speakers. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.
+A mobile app (Android & iOS via Capacitor) that lets users schedule automated reminders for speakers. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.
 
 **Tech Stack:**
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS

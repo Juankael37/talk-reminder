@@ -134,7 +134,7 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-text-primary">Dashboard</h1>
-          <p className="text-text-secondary text-sm">Manage your talk reminders</p>
+          <p className="text-text-secondary text-sm">Manage your reminders</p>
         </div>
         <button
           onClick={handleLogout}

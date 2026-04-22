@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Talk Reminder",
-  description: "Schedule automated SMS reminders for talk speakers",
+  title: "Mate Reminder",
+  description: "Schedule automated reminders for your speakers",
 };
 
 export default function RootLayout({
