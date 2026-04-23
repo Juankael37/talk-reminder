@@ -3,19 +3,25 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const pageToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   
-  // Send to invalid user - shows error
-  const response = await fetch(
-    `https://graph.facebook.com/v21.0/me/messages?access_token=${pageToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: { id: '0' },
-        message: { text: 'test' }
-      })
-    }
+  // Get the first conversation
+  const convRes = await fetch(
+    `https://graph.facebook.com/v21.0/me/conversations?access_token=${pageToken}&limit=1`
   )
+  const convData = await convRes.json()
+  const conv = convData.data?.[0]
   
-  const result = await response.json()
-  return NextResponse.json(result)
+  if (!conv) {
+    return NextResponse.json({ error: 'No conversations' })
+  }
+  
+  // Get messages in the conversation
+  const msgRes = await fetch(
+    `https://graph.facebook.com/v21.0/${conv.id}/messages?access_token=${pageToken}&limit=3`
+  )
+  const msgData = await msgRes.json()
+  
+  return NextResponse.json({
+    conversation: conv,
+    messages: msgData.data
+  })
 }
