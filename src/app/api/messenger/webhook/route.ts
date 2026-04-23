@@ -1,22 +1,7 @@
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
-
-const VERIFY_TOKEN = process.env.MESSENGER_VERIFY_TOKEN
-const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
-const APP_SECRET = process.env.MESSENGER_APP_SECRET
-
-function verifySignature(body: string, signature: string | null): boolean {
-  if (!signature || !APP_SECRET) return true
-  
-  const crypto = require('crypto')
-  const expected = crypto
-    .createHmac('sha1', APP_SECRET)
-    .update(body)
-    .digest('hex')
-  
-  return signature === `sha1=${expected}`
-}
+export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
   const verifyToken = process.env.MESSENGER_VERIFY_TOKEN || 'NOT_SET'
@@ -25,10 +10,7 @@ export async function GET(request: Request) {
   const token = url.searchParams.get('hub.verify_token')
   const challenge = url.searchParams.get('hub.challenge')
 
-  console.log('Webhook GET:', { mode, token, verifyToken })
-
   if (mode === 'subscribe' && token === verifyToken) {
-    console.log('Webhook verified')
     return new NextResponse(challenge, { status: 200 })
   }
 
@@ -40,22 +22,27 @@ export async function POST(request: Request) {
     const bodyText = await request.text()
     const data = JSON.parse(bodyText)
     
-    console.log('Webhook received:', JSON.stringify(data).substring(0, 200))
+    console.log('Webhook received:', Object.keys(data))
 
-    if (data.object === 'page' && data.entry && data.entry[0]) {
-      const messaging = data.entry[0].messaging?.[0]
-      if (messaging) {
-        const senderPsid = messaging.sender?.id
-        const messageText = messaging.message?.text
-        
-        console.log('PSID:', senderPsid, 'Message:', messageText)
-        
-        if (messageText?.toLowerCase() === 'subscribe') {
-          await sendMessage(senderPsid, "You're now subscribed to Messenger reminders!")
-        } else if (messageText?.toLowerCase() === 'stop') {
-          await sendMessage(senderPsid, "You've unsubscribed from Messenger reminders.")
-        } else {
-          await sendMessage(senderPsid, "Thanks for messaging Mate Reminder! Send 'subscribe' or 'stop'.")
+    if (data.object === 'page') {
+      for (const entry of data.entry || []) {
+        // Regular messaging
+        for (const msg of entry.messaging || []) {
+          if (msg.message?.text) {
+            const psid = msg.sender?.id
+            const text = msg.message.text
+            console.log('Message from PSID:', psid, 'Text:', text)
+            await processMessage(psid, text)
+          }
+        }
+        // Standby (handles messages when page is in use)
+        for (const msg of entry.standby || []) {
+          if (msg.message?.text) {
+            const psid = msg.sender?.id
+            const text = msg.message.text
+            console.log('Standby from PSID:', psid, 'Text:', text)
+            await processMessage(psid, text)
+          }
         }
       }
     }
@@ -67,60 +54,26 @@ export async function POST(request: Request) {
   }
 }
 
-async function handleOptIn(psid: string) {
-  const { createClient } = require('@supabase/supabase-js')
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceKey) {
-    console.log('Missing Supabase config, skipping opt-in storage')
-    await sendMessage(psid, "You're now subscribed to Messenger reminders! You'll receive notifications here.")
-    return
+async function processMessage(psid: string, text: string) {
+  if (!psid || !text) return
+  
+  if (text.toLowerCase() === 'subscribe') {
+    await sendMessage(psid, "You're now subscribed to Messenger reminders!")
+  } else if (text.toLowerCase() === 'stop') {
+    await sendMessage(psid, "You've unsubscribed.")
+  } else {
+    await sendMessage(psid, "Thanks! Send 'subscribe' or 'stop'.")
   }
-
-  const supabase = createClient(supabaseUrl, serviceKey)
-
-  const { data: talk } = await supabase
-    .from('talks')
-    .select('id, speaker_name')
-    .ilike('speaker_name', `%${psid}%`)
-    .single()
-
-  await supabase
-    .from('talks')
-    .update({ messenger_psid: psid, messenger_opted_in: true })
-    .eq('speaker_name', psid)
-    .is('messenger_psid', null)
-
-  await sendMessage(psid, "You're now subscribed to Messenger reminders! You'll receive your talk reminders here.")
-}
-
-async function handleOptOut(psid: string) {
-  const { createClient } = require('@supabase/supabase-js')
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !serviceKey) {
-    await sendMessage(psid, "You've unsubscribed from Messenger reminders.")
-    return
-  }
-
-  const supabase = createClient(supabaseUrl, serviceKey)
-
-  await supabase
-    .from('talks')
-    .update({ messenger_opted_in: false })
-    .eq('messenger_psid', psid)
-
-  await sendMessage(psid, "You've unsubscribed from Messenger reminders.")
 }
 
 async function sendMessage(psid: string, messageText: string) {
   const pageAccessToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   if (!pageAccessToken) {
-    console.log('No page access token, skipping send')
+    console.log('No page access token')
     return
   }
+
+  console.log('Sending to PSID:', psid)
 
   const response = await fetch(
     `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
@@ -135,6 +88,6 @@ async function sendMessage(psid: string, messageText: string) {
   )
 
   const result = await response.json()
-  console.log('Send message result:', result)
+  console.log('Send result:', result)
   return result
 }
