@@ -37,32 +37,25 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    console.log('Webhook POST called')
-    const body = await request.text()
-    console.log('Raw body:', body)
+    const bodyText = await request.text()
+    const data = JSON.parse(bodyText)
     
-    // Skip signature verification for now (can enable later with proper secret)
-    // if (!verifySignature(body, signature)) {
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
-    // }
+    console.log('Webhook received:', JSON.stringify(data).substring(0, 200))
 
-    const data = JSON.parse(body)
-
-    if (data.object === 'page') {
-      for (const entry of data.entry || []) {
-        for (const messaging of entry.messaging || []) {
-          const senderPsid = messaging.sender.id
-          const message = messaging.message?.text
-
-          console.log('Received message from PSID:', senderPsid, message)
-
-          if (message?.toLowerCase() === 'subscribe') {
-            await handleOptIn(senderPsid)
-          } else if (message?.toLowerCase() === 'stop') {
-            await handleOptOut(senderPsid)
-          } else {
-            await sendMessage(senderPsid, "Thanks for messaging Mate Reminder! Send 'subscribe' to get reminder notifications via Messenger, or 'stop' to unsubscribe.")
-          }
+    if (data.object === 'page' && data.entry && data.entry[0]) {
+      const messaging = data.entry[0].messaging?.[0]
+      if (messaging) {
+        const senderPsid = messaging.sender?.id
+        const messageText = messaging.message?.text
+        
+        console.log('PSID:', senderPsid, 'Message:', messageText)
+        
+        if (messageText?.toLowerCase() === 'subscribe') {
+          await sendMessage(senderPsid, "You're now subscribed to Messenger reminders!")
+        } else if (messageText?.toLowerCase() === 'stop') {
+          await sendMessage(senderPsid, "You've unsubscribed from Messenger reminders.")
+        } else {
+          await sendMessage(senderPsid, "Thanks for messaging Mate Reminder! Send 'subscribe' or 'stop'.")
         }
       }
     }
