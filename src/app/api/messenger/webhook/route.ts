@@ -121,13 +121,14 @@ async function handleOptOut(psid: string) {
 }
 
 async function sendMessage(psid: string, messageText: string) {
-  if (!PAGE_ACCESS_TOKEN) {
+  const pageAccessToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+  if (!pageAccessToken) {
     console.log('No page access token, skipping send')
     return
   }
 
   const response = await fetch(
-    `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+    `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
