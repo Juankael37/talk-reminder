@@ -38,14 +38,8 @@ export async function POST(request: Request) {
         
         console.log('MESSAGE PSID:', psid, 'TEXT:', text)
         
-        // Send response
-        if (text?.toLowerCase() === 'subscribe') {
-          await sendMessage(psid, "You're now subscribed to Messenger reminders!")
-        } else if (text?.toLowerCase() === 'stop') {
-          await sendMessage(psid, "You've unsubscribed.")
-        } else {
-          await sendMessage(psid, "Thanks! Send 'subscribe' or 'stop'.")
-        }
+        // ALWAYS respond - just to test webhook is being called
+        await sendMessage(psid, "Got your message: " + text)
         
         console.log('RESPONSE SENT to:', psid)
       }
