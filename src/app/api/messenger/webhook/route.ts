@@ -22,72 +22,66 @@ export async function POST(request: Request) {
     const bodyText = await request.text()
     const data = JSON.parse(bodyText)
     
-    console.log('Webhook received:', Object.keys(data))
-
-    if (data.object === 'page') {
-      for (const entry of data.entry || []) {
-        // Regular messaging
-        for (const msg of entry.messaging || []) {
-          if (msg.message?.text) {
-            const psid = msg.sender?.id
-            const text = msg.message.text
-            console.log('Message from PSID:', psid, 'Text:', text)
-            await processMessage(psid, text)
-          }
+    // Log what we received
+    console.log('WEBHOOK RECEIVED:', JSON.stringify(data).substring(0, 500))
+    
+    // Check if it's a message
+    if (data.object === 'page' && data.entry && data.entry[0]) {
+      const entry = data.entry[0]
+      const messaging = entry.messaging?.[0]
+      const standby = entry.standby?.[0]
+      const msg = messaging || standby
+      
+      if (msg && msg.message) {
+        const psid = msg.sender?.id
+        const text = msg.message?.text
+        
+        console.log('MESSAGE PSID:', psid, 'TEXT:', text)
+        
+        // Send response
+        if (text?.toLowerCase() === 'subscribe') {
+          await sendMessage(psid, "You're now subscribed to Messenger reminders!")
+        } else if (text?.toLowerCase() === 'stop') {
+          await sendMessage(psid, "You've unsubscribed.")
+        } else {
+          await sendMessage(psid, "Thanks! Send 'subscribe' or 'stop'.")
         }
-        // Standby (handles messages when page is in use)
-        for (const msg of entry.standby || []) {
-          if (msg.message?.text) {
-            const psid = msg.sender?.id
-            const text = msg.message.text
-            console.log('Standby from PSID:', psid, 'Text:', text)
-            await processMessage(psid, text)
-          }
-        }
+        
+        console.log('RESPONSE SENT to:', psid)
       }
     }
 
     return new NextResponse('OK', { status: 200 })
   } catch (error) {
-    console.error('Webhook error:', error)
+    console.error('WEBHOOK ERROR:', error)
     return new NextResponse('Error', { status: 500 })
-  }
-}
-
-async function processMessage(psid: string, text: string) {
-  if (!psid || !text) return
-  
-  if (text.toLowerCase() === 'subscribe') {
-    await sendMessage(psid, "You're now subscribed to Messenger reminders!")
-  } else if (text.toLowerCase() === 'stop') {
-    await sendMessage(psid, "You've unsubscribed.")
-  } else {
-    await sendMessage(psid, "Thanks! Send 'subscribe' or 'stop'.")
   }
 }
 
 async function sendMessage(psid: string, messageText: string) {
   const pageAccessToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   if (!pageAccessToken) {
-    console.log('No page access token')
+    console.log('NO TOKEN')
     return
   }
 
-  console.log('Sending to PSID:', psid)
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient: { id: psid },
+          message: { text: messageText },
+        }),
+      }
+    )
 
-  const response = await fetch(
-    `https://graph.facebook.com/v21.0/me/messages?access_token=${pageAccessToken}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recipient: { id: psid },
-        message: { text: messageText },
-      }),
-    }
-  )
-
-  const result = await response.json()
-  console.log('Send result:', result)
-  return result
+    const result = await response.json()
+    console.log('SEND RESULT:', result)
+    return result
+  } catch (e) {
+    console.error('SEND ERROR:', e)
+  }
 }
