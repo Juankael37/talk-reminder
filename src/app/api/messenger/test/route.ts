@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const pageToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+  const pageAccessToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   
-  // Get page info
-  const response = await fetch(
-    `https://graph.facebook.com/v21.0/me?fields=id,name&access_token=${pageToken}`
+  // First get page info
+  const meRes = await fetch(
+    `https://graph.facebook.com/v21.0/me?fields=id,name&access_token=${pageAccessToken}`
   )
+  const meData = await meRes.json()
   
-  const result = await response.json()
-  return NextResponse.json(result)
+  // Get conversations
+  const convRes = await fetch(
+    `https://graph.facebook.com/v21.0/me/conversations?access_token=${pageAccessToken}&limit=5`
+  )
+  const convData = await convRes.json()
+  
+  return NextResponse.json({
+    page: meData,
+    conversations: convData.data?.slice(0, 2) || []
+  })
 }
