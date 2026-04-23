@@ -19,14 +19,15 @@ function verifySignature(body: string, signature: string | null): boolean {
 }
 
 export async function GET(request: Request) {
+  const verifyToken = process.env.MESSENGER_VERIFY_TOKEN || 'NOT_SET'
   const url = new URL(request.url)
   const mode = url.searchParams.get('hub.mode')
   const token = url.searchParams.get('hub.verify_token')
   const challenge = url.searchParams.get('hub.challenge')
 
-  console.log('Webhook GET:', { mode, token, VERIFY_TOKEN, url: request.url })
+  console.log('Webhook GET:', { mode, token, verifyToken })
 
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+  if (mode === 'subscribe' && token === verifyToken) {
     console.log('Webhook verified')
     return new NextResponse(challenge, { status: 200 })
   }
