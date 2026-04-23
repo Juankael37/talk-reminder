@@ -2,12 +2,15 @@ import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+const VERIFY_TOKEN = process.env.MESSENGER_VERIFY_TOKEN
+const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+const APP_SECRET = process.env.MESSENGER_APP_SECRET
+
 export async function GET() {
-  const token = process.env.MESSENGER_VERIFY_TOKEN || 'NOT_SET'
-  return NextResponse.json({ 
-    token,
-    tokenLength: token.length,
-    expected: 'mate-reminder-2026',
-    expectedLength: 'mate-reminder-2026'.length
+  return NextResponse.json({
+    verifyToken: VERIFY_TOKEN,
+    verifyTokenLength: VERIFY_TOKEN?.length,
+    hasPageToken: !!PAGE_ACCESS_TOKEN,
+    hasAppSecret: !!APP_SECRET,
   })
 }
