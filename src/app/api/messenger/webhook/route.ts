@@ -19,10 +19,12 @@ function verifySignature(body: string, signature: string | null): boolean {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const mode = searchParams.get('hub.mode')
-  const token = searchParams.get('hub.verify_token')
-  const challenge = searchParams.get('hub.challenge')
+  const url = new URL(request.url)
+  const mode = url.searchParams.get('hub.mode')
+  const token = url.searchParams.get('hub.verify_token')
+  const challenge = url.searchParams.get('hub.challenge')
+
+  console.log('Webhook GET:', { mode, token, VERIFY_TOKEN, url: request.url })
 
   if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('Webhook verified')
