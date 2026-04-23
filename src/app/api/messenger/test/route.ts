@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server'
 
-export const dynamic = 'force-dynamic'
-
 export async function GET() {
-  const pageToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN || 'MISSING'
+  const pageToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   
-  const convRes = await fetch(
-    `https://graph.facebook.com/v21.0/me/conversations?access_token=${pageToken}&limit=1`,
-    { cache: 'no-store' }
+  // Check current permissions
+  const permRes = await fetch(
+    `https://graph.facebook.com/v21.0/me/permissions?access_token=${pageToken}`
   )
-  const convData = await convRes.json()
+  const perms = await permRes.json()
   
-  return NextResponse.json(convData)
+  return NextResponse.json(perms)
 }
