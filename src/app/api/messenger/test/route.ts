@@ -1,13 +1,24 @@
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const pageToken = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+  // Simulate a webhook call
+  const mockData = {
+    object: 'page',
+    entry: [{
+      messaging: [{
+        sender: { id: '24916097874755053' },
+        message: { text: 'test message' }
+      }]
+    }]
+  }
   
-  // Get messages from the conversation
-  const msgRes = await fetch(
-    `https://graph.facebook.com/v21.0/t_26439781818997032/messages?access_token=${pageToken}&limit=5`
-  )
-  const msgData = await msgRes.json()
+  // Call the webhook ourselves
+  const response = await fetch('https://talk-reminder.vercel.app/api/messenger/webhook', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(mockData)
+  })
   
-  return NextResponse.json(msgData)
+  const result = await response.text()
+  return NextResponse.json({ webhookResponse: result, status: response.status })
 }
