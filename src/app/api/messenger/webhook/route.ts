@@ -37,8 +37,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    console.log('Webhook POST called')
     const body = await request.text()
-    const signature = request.headers.get('x-hub-signature')
+    console.log('Raw body:', body)
     
     // Skip signature verification for now (can enable later with proper secret)
     // if (!verifySignature(body, signature)) {
