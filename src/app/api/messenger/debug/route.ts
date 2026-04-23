@@ -3,9 +3,11 @@ import { NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  return NextResponse.json({
-    verifyToken: process.env.MESSENGER_VERIFY_TOKEN,
-    hasPageToken: !!process.env.MESSENGER_PAGE_ACCESS_TOKEN,
-    hasAppSecret: !!process.env.MESSENGER_APP_SECRET,
+  const token = process.env.MESSENGER_VERIFY_TOKEN || 'NOT_SET'
+  return NextResponse.json({ 
+    token,
+    tokenLength: token.length,
+    expected: 'mate-reminder-2026',
+    expectedLength: 'mate-reminder-2026'.length
   })
 }
