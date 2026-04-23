@@ -1,9 +1,9 @@
 # Mate Reminder - Project Rules & Session Tracking
 
 ## Current Project Status
-Last Updated: 2026-04-21
-Current Phase: Phase 4 (Deployment) - COMPLETE
-Current Task: Running, all features working
+Last Updated: 2026-04-22
+Current Phase: Phase 5 (Messenger API Integration) - IN PROGRESS
+Current Task: Meta Messenger API setup - waiting for credentials
 
 ---
 
@@ -15,11 +15,13 @@ Current Task: Running, all features working
 | 1 | 2025-04-20 | Planning | Project plan, UI/UX design, database schema | Initial planning session |
 | 2 | 2025-04-20 | Implementation | Built Next.js app, auth, dashboard, API | Main build session |
 | 3 | 2026-04-21 | Deployment | Build fix, GitHub push ready | Ready for Vercel deploy |
+| 4 | 2026-04-22 | Brand Update | Renamed to Mate Reminder, added Messenger link | Messenger link in emails |
+| 5 | 2026-04-22 | Messenger API Setup | Meta developer account, app created | Waiting for credentials |
 
 ### Active Session
-- Start Time: 2026-04-21
-- Current Task: Deploy to Vercel
-- Notes: Build successful, git push done, user needs to connect Vercel
+- Start Time: 2026-04-22
+- Current Task: Meta Messenger API integration
+- Notes: User has Meta App, Page Access Token obtained. Need to complete setup tomorrow.
 
 ---
 
@@ -39,49 +41,30 @@ Current Task: Running, all features working
 - [x] Add delete talk functionality
 - [x] Implement reminders API route with Email (nodemailer)
 
-### Phase 3: Mobile Build
-- [x] Build Android APK
-- [ ] Build iOS (requires Mac)
-
-### Phase 4: Deployment
-- [x] Deploy to Vercel
-- [x] Configure Vercel cron (daily at 8am)
-- [x] Professional HTML email template
-
----
-
-## Implementation Rules
-
-1. **Session Start Protocol**
-   - Read PROJECT.md and PROJECT_RULES.md first
-   - Check current phase and active tasks
-   - Confirm with user what to work on
-
-2. **Task Completion Protocol**
-   - Mark todo item as completed IMMEDIATELY after finishing
-   - Update session notes
-   - Update "Current Project Status" in this file
-
-3. **Reference Files**
-   - PROJECT.md: Core specifications
-   - PROJECT_RULES.md: This file (session tracking + rules)
-   - PROJECT_PLAN.md: UI/UX design, tech stack, phases
-
-4. **Code Standards**
-   - TypeScript required
-   - Tailwind CSS for styling
-   - Supabase Auth for authentication
-   - Follow existing code patterns
+### Phase 5: Messenger Integration
+- [x] Meta Developer Account setup
+- [x] Create Meta App with Messenger product
+- [x] Get Page Access Token
+- [ ] Get App Secret from Meta Dashboard
+- [ ] Create verify token
+- [ ] Add environment variables
+- [ ] Create welcome email API route
+- [ ] Create Messenger webhook API route
+- [ ] Create Messenger send API route
+- [ ] Update check-reminders to support Messenger
+- [ ] Update database schema (add messenger_psid, messenger_opted_in columns)
+- [ ] Set up webhook in Meta Developer Portal
+- [ ] Test end-to-end
 
 ---
 
 ## Key References
 - Database: Supabase PostgreSQL with RLS
 - Email: nodemailer (Gmail)
+- Messenger: Meta Messenger Platform API
 - Mobile: Capacitor (Android/iOS)
 - Hosting: Vercel
-- Scheduling: cron-job.org
-- Font: Inter (Google Fonts)
+- Scheduling: Vercel Cron (built-in)
 
 ---
 
@@ -98,17 +81,24 @@ Current Task: Running, all features working
 
 ---
 
-## Next Steps (User Action Required)
+## Next Steps (Resume Tomorrow)
 
-### 1. Set up Supabase
-Go to https://supabase.com and create a project, then:
-1. Run the SQL from PROJECT.md in Supabase SQL Editor
-2. Update `.env.local` with your Supabase URL and Anon Key
+### Meta Messenger API Setup
 
-### 2. Set up Twilio
-1. Create Twilio account at https://twilio.com
-2. Get Account SID, Auth Token, and Phone Number
-3. Update `.env.local` with Twilio credentials
+1. **Get credentials from Meta Developer Portal**:
+   - Page Access Token (already obtained)
+   - App Secret: https://developers.facebook.com/apps/936591262528758/dashboard/
+   - Create a verify token (random string)
 
-### 3. Build Android APK
-Run: `npx cap add android && npx cap sync android`
+2. **Add to Vercel Environment Variables**:
+   - `MESSENGER_PAGE_ACCESS_TOKEN`
+   - `MESSENGER_APP_SECRET`
+   - `MESSENGER_VERIFY_TOKEN`
+
+3. **Set up webhook in Meta Developer Portal**:
+   - URL: `https://talk-reminder-8f7uwaasp-juankael37s-projects.vercel.app/api/messenger/webhook`
+   - Verify Token: (your verify token)
+   - Subscribe to: `messages` event
+
+### Reference Files
+- `META_SETUP.md` - Complete Meta setup guide

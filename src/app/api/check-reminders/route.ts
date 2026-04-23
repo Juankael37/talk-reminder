@@ -8,7 +8,7 @@ const getTransporter = () => {
   const email = process.env.EMAIL_USER
   const password = process.env.EMAIL_PASS
 
-    if (!email || !password) {
+  if (!email || !password) {
     console.log('No email config - emails will be logged only')
     return null
   }
@@ -21,19 +21,17 @@ const getTransporter = () => {
 
 export async function POST() {
   try {
-    // Check environment variables
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
+
     if (!supabaseUrl) {
       return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SUPABASE_URL' }, { status: 500 })
     }
     if (!serviceKey) {
-      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY - add it in Vercel Dashboard > Settings > Environment Variables' }, { status: 500 })
+      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }, { status: 500 })
     }
 
     const supabase = createClient(supabaseUrl, serviceKey)
-
     const now = new Date().toISOString()
     console.log('Checking for reminders at', now)
 
@@ -42,8 +40,6 @@ export async function POST() {
       .select('*, talks(*)')
       .eq('is_sent', false)
       .lte('scheduled_time', now)
-
-    console.log('Rules query result:', { count: dueRules?.length, error: rulesError })
 
     if (rulesError) {
       return NextResponse.json({ error: rulesError.message }, { status: 500 })
@@ -54,25 +50,39 @@ export async function POST() {
     }
 
     console.log('Found due rules:', dueRules.length)
-
     const transporter = getTransporter()
     let sentCount = 0
 
     for (const rule of dueRules) {
       const talk = (rule as any).talks
-      if (!talk?.speaker_email) {
-        console.log('Skipping rule - no speaker email:', rule.id)
-        continue
+      if (!talk) continue
+
+      if (talk?.speaker_email) {
+        await sendEmailReminder(rule, talk, supabase, transporter)
+        sentCount++
       }
 
-      console.log('Processing rule for talk:', talk.speaker_name, '->', talk.speaker_email)
+      if (talk?.messenger_psid && talk?.messenger_opted_in) {
+        await sendMessengerReminder(rule, talk, supabase)
+        sentCount++
+      }
+    }
 
-      const talkDate = new Date(talk.talk_date)
-      const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-      const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+    return NextResponse.json({ message: 'Done', sent: sentCount })
+  } catch (error) {
+    console.error('Error:', error)
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal error' }, { status: 500 })
+  }
+}
 
-      const htmlContent = `
-<!DOCTYPE html>
+async function sendEmailReminder(rule: any, talk: any, supabase: any, transporter: any) {
+  console.log('Processing email for talk:', talk.speaker_name)
+
+  const talkDate = new Date(talk.talk_date)
+  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+
+  const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <style>
@@ -89,13 +99,7 @@ export async function POST() {
     .details li { margin: 12px 0; color: #64748B; font-size: 15px; }
     .details li strong { color: #1E293B; }
     .icon { margin-right: 8px; }
-    .messenger-section { background: linear-gradient(135deg, #f0f4ff, #e8eeff); border-radius: 12px; padding: 24px; margin-top: 28px; text-align: center; }
-    .messenger-section h3 { margin: 0 0 12px 0; color: #1E293B; font-size: 16px; font-weight: 600; }
-    .messenger-section p { margin: 0 0 16px 0; color: #64748B; font-size: 14px; line-height: 1.5; }
-    .messenger-btn { display: inline-block; background: linear-gradient(135deg, #0080FF, #0066CC); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; }
-    .messenger-btn:hover { background: linear-gradient(135deg, #0070ee, #0055bb); }
     .footer { background-color: #F1F5F9; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }
-    .footer a { color: #6366F1; text-decoration: none; }
   </style>
 </head>
 <body>
@@ -116,58 +120,70 @@ export async function POST() {
         </ul>
       </div>
       <p>We're looking forward to your presentation!</p>
-      
-      <div class="messenger-section">
-        <h3>💬 Prefer Messenger Reminders?</h3>
-        <p>Get future reminders delivered directly to your Facebook Messenger. Click below to subscribe — it's quick and easy!</p>
-        <a href="https://m.me/matereminder?text=subscribe" class="messenger-btn">Subscribe via Messenger</a>
-        <p style="margin-top: 12px; font-size: 12px; color: #94a3b8;">Click the button → Opens Messenger → Send "subscribe" to confirm</p>
-      </div>
     </div>
     <div class="footer">
-      <p>Sent via <a href="#">Mate Reminder</a></p>
+      <p>Sent via Mate Reminder</p>
     </div>
   </div>
 </body>
 </html>`
 
-      const plainText = `Hi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n\n"${talk.talk_title || 'Talk'}"\n\nDate: ${formattedDate}\nTime: ${formattedTime}\n\nWe're looking forward to your presentation!\n\n---\n💬 Prefer Messenger Reminders?\nGet future reminders via Facebook Messenger:\nhttps://m.me/matereminder?text=subscribe\n\n- Sent via Mate Reminder`
+  const plainText = `Hi ${talk.speaker_name},\n\nReminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\nDate: ${formattedDate}\nTime: ${formattedTime}\nReminder: ${rule.offset_label}\n\n- Sent via Mate Reminder`
 
-      try {
-        if (transporter) {
-          await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: talk.speaker_email,
-            subject: `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
-            html: htmlContent,
-            text: plainText,
-          })
-          console.log('Email sent to:', talk.speaker_email)
-        }
-
-        await supabase
-          .from('reminder_rules')
-          .update({ is_sent: true })
-          .eq('id', rule.id)
-
-        await supabase.from('reminder_logs').insert({
-          rule_id: rule.id,
-          response: 'Sent via Email',
-        })
-
-        sentCount++
-      } catch (emailError) {
-        console.error('Email error:', emailError)
-      }
+  try {
+    if (transporter) {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER,
+        to: talk.speaker_email,
+        subject: `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
+        html: htmlContent,
+        text: plainText,
+      })
+      console.log('Email sent to:', talk.speaker_email)
     }
 
-    return NextResponse.json({ message: 'Done', sent: sentCount })
-  } catch (error) {
-    console.error('Error:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal error' },
-      { status: 500 }
+    await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
+    await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Email' })
+  } catch (emailError) {
+    console.error('Email error:', emailError)
+  }
+}
+
+async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
+  const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+  if (!PAGE_ACCESS_TOKEN) {
+    console.log('No page access token for Messenger')
+    return
+  }
+
+  console.log('Sending Messenger reminder:', talk.speaker_name)
+
+  const talkDate = new Date(talk.talk_date)
+  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+
+  const message = `⏰ Reminder: Your talk "${talk.talk_title || 'Talk'}" is coming up!\n\n📅 ${formattedDate}\n🕐 ${formattedTime}\n⏱ ${rule.offset_label}`
+
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient: { id: talk.messenger_psid },
+          message: { text: message },
+        }),
+      }
     )
+
+    const result = await response.json()
+    if (result.message_id) {
+      await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
+      await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Messenger' })
+    }
+  } catch (messengerError) {
+    console.error('Messenger error:', messengerError)
   }
 }
 

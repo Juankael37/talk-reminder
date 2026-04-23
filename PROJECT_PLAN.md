@@ -2,15 +2,16 @@
 
 ## 1. Project Overview
 
-A mobile app (Android & iOS via Capacitor) that lets users schedule automated reminders for speakers. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.
+A mobile app (Android & iOS via Capacitor) that lets users schedule automated reminders for speakers via Email and Facebook Messenger. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.
 
 **Tech Stack:**
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth)
 - **Email**: nodemailer (Gmail)
+- **Messenger**: Meta Messenger Platform API
 - **Mobile Wrapper**: Capacitor
 - **Hosting**: Vercel
-- **Scheduling**: cron-job.org (free)
+- **Scheduling**: Vercel Cron (built-in)
 
 ---
 
@@ -26,6 +27,9 @@ CREATE TABLE talks (
   talk_date TIMESTAMPTZ NOT NULL,
   notification_channel TEXT DEFAULT 'email',
   speaker_email TEXT,
+  -- Messenger tracking columns
+  messenger_psid TEXT,
+  messenger_opted_in BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -51,6 +55,14 @@ CREATE TABLE reminder_logs (
 -- Enable RLS policies (as specified in PROJECT.md)
 ```
 
+### Database Updates (for existing projects)
+
+```sql
+-- Add Messenger columns to existing talks table
+ALTER TABLE talks ADD COLUMN messenger_psid TEXT;
+ALTER TABLE talks ADD COLUMN messenger_opted_in BOOLEAN DEFAULT false;
+```
+
 ---
 
 ## 3. API Routes
@@ -62,6 +74,9 @@ CREATE TABLE reminder_logs (
 | `/api/talks/[id]/route.ts` | GET, PUT, DELETE | Single talk operations |
 | `/api/check-reminders/route.ts` | GET, POST | Trigger reminder check (cron + manual) |
 | `/api/reminder-logs/route.ts` | GET | Fetch reminder logs |
+| `/api/send-welcome-email/route.ts` | POST | Send welcome email to speaker |
+| `/api/messenger/webhook/route.ts` | GET, POST | Messenger webhook (opt-in handling) |
+| `/api/messenger/send/route.ts` | POST | Send reminder via Messenger API |
 
 ---
 
@@ -125,24 +140,32 @@ CREATE TABLE reminder_logs (
 
 ### Phase 1: Foundation
 - [x] Initialize Next.js 14 project
-- [ ] Set up Supabase project + database schema
-- [ ] Configure Capacitor for mobile wrapper
-- [ ] Implement Login/Signup pages with Supabase Auth
+- [x] Set up Supabase project + database schema
+- [x] Configure Capacitor for mobile wrapper
+- [x] Implement Login/Signup pages with Supabase Auth
 
 ### Phase 2: Core Features
-- [ ] Build Dashboard with talks list
-- [ ] Create Add/Edit Talk form
-- [ ] Implement reminder offset selector
-- [ ] Add delete talk functionality
-- [ ] Implement `/api/check-reminders` with Twilio
+- [x] Build Dashboard with talks list
+- [x] Create Add/Edit Talk form with validation
+- [x] Implement reminder offset selector
+- [x] Add delete talk functionality
+- [x] Implement `/api/check-reminders` with Email (nodemailer)
 
 ### Phase 3: Mobile Build
-- [ ] Build Android APK
+- [x] Build Android APK
 - [ ] Build iOS (requires Mac)
 
 ### Phase 4: Deployment
-- [ ] Deploy to Vercel
-- [ ] Configure cron-job.org
+- [x] Deploy to Vercel
+- [x] Configure Vercel cron (built-in)
+- [x] Professional HTML email template
+
+### Phase 5: Messenger Integration
+- [ ] Create welcome email API route
+- [ ] Create Messenger webhook API route
+- [ ] Create Messenger send API route
+- [ ] Set up webhook in Meta Developer Portal
+- [ ] Test end-to-end
 
 ---
 
@@ -152,8 +175,8 @@ CREATE TABLE reminder_logs (
 |---------|-----------|------|
 | Vercel | ✓ (hobby) | $20/mo |
 | Supabase | ✓ 500MB DB | $25/mo |
-| Twilio | ✓ $15 credit | ~$1/100 SMS |
-| cron-job.org | ✓ 5 jobs | Free sufficient |
+| Gmail | ✓ (personal) | - |
+| Meta Messenger API | ✓ (free) | - |
 | Capacitor | ✓ | Free |
 
 **Target Cost: $0/mo**
