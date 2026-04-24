@@ -10,9 +10,8 @@ const svg = `<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" x
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#bgGrad)"/>
-  <rect x="490" y="240" width="300" height="300" rx="60" fill="white" opacity="0.15"/>
-  <text x="640" y="380" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="220" font-weight="bold">M</text>
-  <text x="640" y="480" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="55" font-weight="600">Mate Reminder</text>
+  <text x="640" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="320" font-weight="bold">M</text>
+  <text x="640" y="540" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="64" font-weight="500">Mate Reminder</text>
 </svg>`;
 
 const splashSizes = [

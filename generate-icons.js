@@ -10,8 +10,7 @@ const svg = `<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xml
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="100" fill="url(#bgGrad)"/>
-  <rect x="170" y="95" width="172" height="172" rx="35" fill="white" opacity="0.15"/>
-  <text x="256" y="235" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="140" font-weight="bold">M</text>
+  <text x="256" y="360" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="280" font-weight="bold">M</text>
 </svg>`;
 
 const mipmaps = {
