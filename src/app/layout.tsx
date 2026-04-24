@@ -10,6 +10,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Mate Reminder",
   description: "Schedule automated reminders for your speakers",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

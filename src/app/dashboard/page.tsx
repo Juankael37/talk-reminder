@@ -159,9 +159,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">M</span>
-                </div>
+<img src="/logo.svg" alt="Mate Reminder" className="w-8 h-8" />
                 <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Mate Reminder
                 </span>
