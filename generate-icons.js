@@ -6,16 +6,14 @@ const svg = `<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xml
   <defs>
     <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#6366F1"/>
-      <stop offset="100%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
     </linearGradient>
   </defs>
-  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)"/>
-  <path d="M256 170C256 170 210 170 210 215V265C210 280 200 295 185 300L175 305C165 310 160 320 160 330C160 342 170 352 182 352H330C342 352 352 342 352 330C352 320 347 310 337 305L327 300C312 295 302 280 302 265V215C302 170 256 170 256 170Z" fill="white"/>
-  <circle cx="256" cy="260" r="12" fill="#6366F1"/>
-  <ellipse cx="256" cy="370" rx="28" ry="15" fill="white"/>
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad)"/>
+  <rect x="170" y="95" width="172" height="172" rx="35" fill="white" opacity="0.15"/>
+  <text x="256" y="235" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="140" font-weight="bold">M</text>
 </svg>`;
 
-const sizes = [72, 96, 144, 192, 512];
 const mipmaps = {
   'mipmap-mdpi': 48,
   'mipmap-hdpi': 72,
@@ -49,7 +47,6 @@ async function generateIcons() {
     console.log(`Generated ${size}x${size} icons for ${folder}`);
   }
   
-  // Splash screen
   const splashDir = path.join(resDir, 'drawable');
   await sharp(Buffer.from(svg))
     .resize(512, 512)

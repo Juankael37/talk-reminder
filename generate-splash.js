@@ -6,13 +6,13 @@ const svg = `<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" x
   <defs>
     <linearGradient id="bgGrad" x1="0" y1="0" x2="1280" y2="720" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#6366F1"/>
-      <stop offset="100%" stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
     </linearGradient>
   </defs>
   <rect width="1280" height="720" fill="url(#bgGrad)"/>
-  <path d="M640 270C640 270 530 270 530 345V435C530 470 500 505 455 520L425 535C395 550 380 580 380 610C380 650 420 680 470 680H810C860 680 900 650 900 610C900 580 885 550 855 535L825 520C780 505 750 470 750 435V345C750 270 640 270 640 270Z" fill="white"/>
-  <circle cx="640" cy="430" r="30" fill="#6366F1"/>
-  <ellipse cx="640" cy="580" rx="70" ry="38" fill="white"/>
+  <rect x="490" y="240" width="300" height="300" rx="60" fill="white" opacity="0.15"/>
+  <text x="640" y="380" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="220" font-weight="bold">M</text>
+  <text x="640" y="480" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="55" font-weight="600">Mate Reminder</text>
 </svg>`;
 
 const splashSizes = [
