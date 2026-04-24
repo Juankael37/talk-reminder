@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Mate Reminder',
   webDir: '.next',
   server: {
-    url: 'https://talk-reminder-8f7uwaasp-juankael37s-projects.vercel.app',
+    url: 'https://talk-reminder.vercel.app',
     androidScheme: 'https'
   }
 };

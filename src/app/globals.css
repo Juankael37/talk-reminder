@@ -14,6 +14,20 @@
   --foreground: #1E293B;
 }
 
+.dark {
+  --primary: #818CF8;
+  --primary-dark: #6366F1;
+  --secondary: #1E293B;
+  --surface: #1E293B;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --error: #F87171;
+  --background: #0F172A;
+  --foreground: #F1F5F9;
+}
+
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);

@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useTheme } from '@/components/ThemeProvider'
 
 interface Talk {
   id: string
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  const { theme, toggleTheme } = useTheme()
 
   const getSupabase = () => {
     if (!supabaseRef.current) {
@@ -136,7 +138,11 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+          : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+      }`}>
         <div className="relative">
           <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
         </div>
@@ -144,51 +150,80 @@ export default function DashboardPage() {
     )
   }
 
+  const bgMain = theme === 'dark' 
+    ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+    : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+  const bgCard = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+  const bgCardHover = theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50/50'
+  const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900'
+  const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+  const textMuted = theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-100'
+  const inputBg = theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50/50 border-gray-200 text-gray-900'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-40">
+    <div className={`min-h-screen ${bgMain}`}>
+      <header className={`${theme === 'dark' ? 'bg-gray-800/80' : 'bg-white/80'} backdrop-blur-md ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} border-b sticky top-0 z-40`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition"
+                className={`p-2 rounded-lg transition ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
               >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-6 h-6 ${textSecondary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
               <div className="flex items-center gap-2">
-<img src="/logo.svg" alt="Mate Reminder" className="w-8 h-8" />
-                <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-sm font-bold text-white">M</span>
+                </div>
+                <span className={`text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent ${theme === 'dark' ? 'text-white' : ''}`}>
                   Mate Reminder
                 </span>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-700 transition flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg transition ${theme === 'dark' ? 'hover:bg-gray-700 text-yellow-400' : 'hover:bg-gray-100 text-gray-600'}`}
+              >
+                {theme === 'dark' ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                )}
+              </button>
+              <button
+                onClick={handleLogout}
+                className={`text-sm transition flex items-center gap-2 ${textSecondary} hover:text-red-500`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <div className="flex">
-        <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl transform transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 ${bgCard} shadow-2xl transform transition-transform duration-300 ease-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="h-full flex flex-col">
-            <div className="p-6 border-b border-gray-100">
+            <div className={`p-6 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
+                <h2 className={`text-lg font-semibold ${textPrimary}`}>Quick Actions</h2>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="p-1 rounded-lg hover:bg-gray-100 transition"
+                  className={`p-1 rounded-lg transition ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                 >
-                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className={`w-5 h-5 ${textSecondary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -197,25 +232,25 @@ export default function DashboardPage() {
 
             <div className="flex-1 p-6 space-y-6">
               <div>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Statistics</h3>
+                <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Statistics</h3>
                 <div className="space-y-3">
-                  <div className="p-4 bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl">
-                    <p className="text-xs text-indigo-600 font-medium">Total Talks</p>
-                    <p className="text-2xl font-bold text-indigo-700">{talks.length}</p>
+                  <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gradient-to-r from-indigo-50 to-indigo-100'}`}>
+                    <p className={`text-xs font-medium ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`}>Total Talks</p>
+                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-indigo-300' : 'text-indigo-700'}`}>{talks.length}</p>
                   </div>
-                  <div className="p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl">
-                    <p className="text-xs text-amber-600 font-medium">Pending Reminders</p>
-                    <p className="text-2xl font-bold text-amber-700">{pendingCount}</p>
+                  <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gradient-to-r from-amber-50 to-amber-100'}`}>
+                    <p className={`text-xs font-medium ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Pending Reminders</p>
+                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-amber-300' : 'text-amber-700'}`}>{pendingCount}</p>
                   </div>
-                  <div className="p-4 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-xl">
-                    <p className="text-xs text-emerald-600 font-medium">Sent Reminders</p>
-                    <p className="text-2xl font-bold text-emerald-700">{sentCount}</p>
+                  <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gradient-to-r from-emerald-50 to-emerald-100'}`}>
+                    <p className={`text-xs font-medium ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>Sent Reminders</p>
+                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-emerald-300' : 'text-emerald-700'}`}>{sentCount}</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Utilities</h3>
+                <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Utilities</h3>
                 <button
                   onClick={runCheck}
                   disabled={runningCheck}
@@ -230,12 +265,12 @@ export default function DashboardPage() {
 
               {upcomingTalks.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Upcoming</h3>
+                  <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Upcoming</h3>
                   <div className="space-y-2">
                     {upcomingTalks.slice(0, 3).map((talk) => (
-                      <div key={talk.id} className="p-3 bg-gray-50 rounded-lg">
-                        <p className="font-medium text-gray-800 text-sm truncate">{talk.speaker_name}</p>
-                        <p className="text-xs text-gray-500">{getRelativeTime(talk.talk_date)}</p>
+                      <div key={talk.id} className={`p-3 rounded-lg ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                        <p className={`font-medium text-sm truncate ${textPrimary}`}>{talk.speaker_name}</p>
+                        <p className={`text-xs ${textSecondary}`}>{getRelativeTime(talk.talk_date)}</p>
                       </div>
                     ))}
                   </div>
@@ -254,16 +289,16 @@ export default function DashboardPage() {
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-500 mt-1">Manage your talk reminders</p>
+            <h1 className={`text-3xl font-bold ${textPrimary}`}>Dashboard</h1>
+            <p className={`mt-1 ${textSecondary}`}>Manage your talk reminders</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
+            <div className={`${bgCard} rounded-2xl p-6 shadow-sm border ${borderColor} hover:shadow-md transition`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Total Talks</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{talks.length}</p>
+                  <p className={`text-sm font-medium ${textSecondary}`}>Total Talks</p>
+                  <p className={`text-3xl font-bold mt-1 ${textPrimary}`}>{talks.length}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
                   <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,27 +307,27 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
+            <div className={`${bgCard} rounded-2xl p-6 shadow-sm border ${borderColor} hover:shadow-md transition`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Pending</p>
-                  <p className="text-3xl font-bold text-amber-600 mt-1">{pendingCount}</p>
+                  <p className={`text-sm font-medium ${textSecondary}`}>Pending</p>
+                  <p className={`text-3xl font-bold mt-1 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>{pendingCount}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${theme === 'dark' ? 'bg-amber-900/30' : 'bg-amber-100'}`}>
+                  <svg className={`w-6 h-6 ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
             </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition">
+            <div className={`${bgCard} rounded-2xl p-6 shadow-sm border ${borderColor} hover:shadow-md transition`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Sent</p>
-                  <p className="text-3xl font-bold text-emerald-600 mt-1">{sentCount}</p>
+                  <p className={`text-sm font-medium ${textSecondary}`}>Sent</p>
+                  <p className={`text-3xl font-bold mt-1 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{sentCount}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${theme === 'dark' ? 'bg-emerald-900/30' : 'bg-emerald-100'}`}>
+                  <svg className={`w-6 h-6 ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -311,14 +346,14 @@ export default function DashboardPage() {
           </button>
 
           {talks.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`${bgCard} rounded-2xl p-12 text-center shadow-sm border ${borderColor}`}>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <svg className={`w-8 h-8 ${textMuted}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">No talks yet</h3>
-              <p className="text-gray-500 mb-6">Create your first talk to start scheduling reminders</p>
+              <h3 className={`text-lg font-semibold mb-2 ${textPrimary}`}>No talks yet</h3>
+              <p className={`mb-6 ${textSecondary}`}>Create your first talk to start scheduling reminders</p>
               <button
                 onClick={() => setShowAddModal(true)}
                 className="text-indigo-600 font-medium hover:text-indigo-700 transition"
@@ -327,38 +362,38 @@ export default function DashboardPage() {
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className={`${bgCard} rounded-2xl shadow-sm border ${borderColor} overflow-hidden`}>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50/50">
+                  <thead className={theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50/50'}>
                     <tr>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider p-4">Speaker</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider p-4">Talk</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider p-4">Date & Time</th>
-                      <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider p-4">Status</th>
-                      <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wider p-4">Actions</th>
+                      <th className={`text-left text-xs font-semibold ${textMuted} uppercase tracking-wider p-4`}>Speaker</th>
+                      <th className={`text-left text-xs font-semibold ${textMuted} uppercase tracking-wider p-4`}>Talk</th>
+                      <th className={`text-left text-xs font-semibold ${textMuted} uppercase tracking-wider p-4`}>Date & Time</th>
+                      <th className={`text-left text-xs font-semibold ${textMuted} uppercase tracking-wider p-4`}>Status</th>
+                      <th className={`text-right text-xs font-semibold ${textMuted} uppercase tracking-wider p-4`}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className={`divide-y ${borderColor}`}>
                     {talks.map((talk) => (
-                      <tr key={talk.id} className="hover:bg-gray-50/50 transition">
+                      <tr key={talk.id} className={`hover:${theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50/50'} transition`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
                               {talk.speaker_name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{talk.speaker_name}</p>
-                              <p className="text-sm text-gray-500">{talk.speaker_email}</p>
+                              <p className={`font-medium ${textPrimary}`}>{talk.speaker_name}</p>
+                              <p className={`text-sm ${textSecondary}`}>{talk.speaker_email}</p>
                             </div>
                           </div>
                         </td>
                         <td className="p-4">
-                          <p className="font-medium text-gray-800">{talk.talk_title || '—'}</p>
+                          <p className={`font-medium ${textPrimary}`}>{talk.talk_title || '—'}</p>
                         </td>
                         <td className="p-4">
-                          <p className="font-medium text-gray-800">{formatDate(talk.talk_date)}</p>
-                          <p className="text-sm text-gray-500">{formatTime(talk.talk_date)}</p>
+                          <p className={`font-medium ${textPrimary}`}>{formatDate(talk.talk_date)}</p>
+                          <p className={`text-sm ${textSecondary}`}>{formatTime(talk.talk_date)}</p>
                         </td>
                         <td className="p-4">
                           <div className="flex gap-1.5 flex-wrap">
@@ -367,8 +402,8 @@ export default function DashboardPage() {
                                 key={rule.id}
                                 className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full ${
                                   rule.is_sent
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-amber-100 text-amber-700'
+                                    ? theme === 'dark' ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                                    : theme === 'dark' ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-700'
                                 }`}
                               >
                                 {rule.is_sent ? (
@@ -386,7 +421,7 @@ export default function DashboardPage() {
                         <td className="p-4 text-right">
                           <button
                             onClick={() => deleteTalk(talk.id)}
-                            className="text-sm text-red-500 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
+                            className={`text-sm px-3 py-1.5 rounded-lg transition ${theme === 'dark' ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30' : 'text-red-500 hover:text-red-600 hover:bg-red-50'}`}
                           >
                             Delete
                           </button>
@@ -405,6 +440,7 @@ export default function DashboardPage() {
         <AddTalkModal
           onClose={() => setShowAddModal(false)}
           onSuccess={fetchTalks}
+          theme={theme}
         />
       )}
     </div>
@@ -414,9 +450,11 @@ export default function DashboardPage() {
 function AddTalkModal({
   onClose,
   onSuccess,
+  theme,
 }: {
   onClose: () => void
   onSuccess: () => void
+  theme: 'light' | 'dark'
 }) {
   const [speakerName, setSpeakerName] = useState('')
   const [talkTitle, setTalkTitle] = useState('')
@@ -433,6 +471,11 @@ function AddTalkModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
+
+  const bgCard = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
+  const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900'
+  const textSecondary = theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+  const inputBg = theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50/50 border-gray-200 text-gray-900'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -516,15 +559,15 @@ function AddTalkModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 border-b border-gray-100">
+      <div className={`${bgCard} rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl border`}>
+        <div className={`p-6 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">Add New Talk</h2>
+            <h2 className={`text-xl font-bold ${textPrimary}`}>Add New Talk</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-gray-100 transition"
+              className={`p-2 rounded-lg transition ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
             >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${textSecondary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -539,41 +582,41 @@ function AddTalkModal({
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${textSecondary}`}>
               Speaker Name *
             </label>
             <input
               type="text"
               value={speakerName}
               onChange={(e) => setSpeakerName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-gray-50/50"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
               placeholder="John Doe"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${textSecondary}`}>
               Talk Title
             </label>
             <input
               type="text"
               value={talkTitle}
               onChange={(e) => setTalkTitle(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-gray-50/50"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
               placeholder="Topic of the talk"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${textSecondary}`}>
               Speaker Email *
             </label>
             <input
               type="email"
               value={speakerEmail}
               onChange={(e) => setSpeakerEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-gray-50/50"
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
               placeholder="speaker@example.com"
               required
             />
@@ -581,62 +624,62 @@ function AddTalkModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${textSecondary}`}>
                 Date *
               </label>
               <input
                 type="date"
                 value={talkDate}
                 onChange={(e) => setTalkDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-gray-50/50"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className={`block text-sm font-semibold mb-2 ${textSecondary}`}>
                 Time *
               </label>
               <input
                 type="time"
                 value={talkTime}
                 onChange={(e) => setTalkTime(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition bg-gray-50/50"
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <label className={`block text-sm font-semibold mb-3 ${textSecondary}`}>
               Reminder Offsets
             </label>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+              <label className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'}`}>
                 <input
                   type="checkbox"
                   checked={offsets.oneWeek}
                   onChange={(e) => setOffsets({ ...offsets, oneWeek: e.target.checked })}
                   className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                 />
-                <span className="text-sm font-medium text-gray-700">1 week before</span>
+                <span className={`text-sm font-medium ${textSecondary}`}>1 week before</span>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+              <label className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'}`}>
                 <input
                   type="checkbox"
                   checked={offsets.oneDay}
                   onChange={(e) => setOffsets({ ...offsets, oneDay: e.target.checked })}
                   className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                 />
-                <span className="text-sm font-medium text-gray-700">1 day before</span>
+                <span className={`text-sm font-medium ${textSecondary}`}>1 day before</span>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition">
+              <label className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-50 hover:bg-gray-100'}`}>
                 <input
                   type="checkbox"
                   checked={offsets.custom}
                   onChange={(e) => setOffsets({ ...offsets, custom: e.target.checked })}
                   className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Custom:</span>
+                <span className={`text-sm font-medium ${textSecondary}`}>Custom:</span>
                 {offsets.custom && (
                   <div className="flex items-center gap-2">
                     <input
@@ -644,17 +687,17 @@ function AddTalkModal({
                       min="1"
                       value={offsets.customValue}
                       onChange={(e) => setOffsets({ ...offsets, customValue: parseInt(e.target.value) || 1 })}
-                      className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-sm bg-white"
+                      className={`w-16 px-2 py-1 border rounded-lg text-sm ${theme === 'dark' ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-200'}`}
                     />
                     <select
                       value={offsets.customUnit}
                       onChange={(e) => setOffsets({ ...offsets, customUnit: e.target.value })}
-                      className="px-2 py-1 border border-gray-200 rounded-lg text-sm bg-white"
+                      className={`px-2 py-1 border rounded-lg text-sm ${theme === 'dark' ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-200'}`}
                     >
                       <option value="hours">hours</option>
                       <option value="days">days</option>
                     </select>
-                    <span className="text-sm text-gray-500">before</span>
+                    <span className={`text-sm ${textSecondary}`}>before</span>
                   </div>
                 )}
               </label>
@@ -665,7 +708,7 @@ function AddTalkModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 px-4 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition"
+              className={`flex-1 py-3 px-4 border font-medium rounded-xl transition ${theme === 'dark' ? 'border-gray-600 text-white hover:bg-gray-700' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
             >
               Cancel
             </button>
