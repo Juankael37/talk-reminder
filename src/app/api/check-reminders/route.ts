@@ -61,11 +61,6 @@ export async function POST() {
         await sendEmailReminder(rule, talk, supabase, transporter)
         sentCount++
       }
-
-      if (talk?.messenger_psid && talk?.messenger_opted_in) {
-        await sendMessengerReminder(rule, talk, supabase)
-        sentCount++
-      }
     }
 
     return NextResponse.json({ message: 'Done', sent: sentCount })
@@ -146,44 +141,6 @@ async function sendEmailReminder(rule: any, talk: any, supabase: any, transporte
     await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Email' })
   } catch (emailError) {
     console.error('Email error:', emailError)
-  }
-}
-
-async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
-  const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
-  if (!PAGE_ACCESS_TOKEN) {
-    console.log('No page access token for Messenger')
-    return
-  }
-
-  console.log('Sending Messenger reminder:', talk.speaker_name)
-
-  const talkDate = new Date(talk.talk_date)
-  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
-
-  const message = `⏰ Reminder: Your talk "${talk.talk_title || 'Talk'}" is coming up!\n\n📅 ${formattedDate}\n🕐 ${formattedTime}\n⏱ ${rule.offset_label}`
-
-  try {
-    const response = await fetch(
-      `https://graph.facebook.com/v21.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipient: { id: talk.messenger_psid },
-          message: { text: message },
-        }),
-      }
-    )
-
-    const result = await response.json()
-    if (result.message_id) {
-      await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
-      await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Messenger' })
-    }
-  } catch (messengerError) {
-    console.error('Messenger error:', messengerError)
   }
 }
 
