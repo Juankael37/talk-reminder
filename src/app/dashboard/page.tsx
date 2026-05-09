@@ -171,7 +171,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
               <div className="flex items-center gap-2">
-                <Image src="/Official_logo_new.png" alt="Talk Reminder Logo" width={160} height={48} priority className="dark:brightness-110" />
+                <Image src="/logo.png" alt="Talk Reminder Logo" width={160} height={48} priority />
               </div>
             </div>
             <div className="flex items-center gap-2">
