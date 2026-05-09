@@ -170,8 +170,8 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <div className={`flex items-center gap-2 ${theme === 'dark' ? 'bg-white/90 p-1.5 rounded-lg' : ''}`}>
-                <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={160} height={48} priority />
+              <div className="flex items-center gap-2">
+                <Image src="/Official_logo_new.png" alt="Talk Reminder Logo" width={160} height={48} priority className="dark:brightness-110" />
               </div>
             </div>
             <div className="flex items-center gap-2">
