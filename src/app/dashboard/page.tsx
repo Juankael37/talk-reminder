@@ -57,21 +57,12 @@ export default function DashboardPage() {
 
     const { data: talksData, error } = await supabase
       .from('talks')
-      .select('*')
+      .select('*, reminder_rules(*)')
       .eq('user_id', user.id)
       .order('talk_date', { ascending: true })
 
     if (talksData) {
-      const talksWithRules = await Promise.all(
-        talksData.map(async (talk) => {
-          const { data: rules } = await supabase
-            .from('reminder_rules')
-            .select('id, offset_label, is_sent')
-            .eq('talk_id', talk.id)
-          return { ...talk, reminder_rules: rules || [] }
-        })
-      )
-      setTalks(talksWithRules)
+      setTalks(talksData)
     }
     setLoading(false)
   }

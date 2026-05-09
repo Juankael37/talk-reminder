@@ -27,9 +27,11 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // Use getSession instead of getUser in middleware to prevent Vercel 504 timeouts on database cold starts
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user
 
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     const url = request.nextUrl.clone()
