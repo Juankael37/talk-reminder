@@ -167,6 +167,8 @@ async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
   const messageText = `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up\n\nHi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\n📅 Date: ${formattedDate}\n🕐 Time: ${formattedTime}\n⏱ Reminder: ${rule.offset_label}\n\nWe're looking forward to your presentation! (Sent via Mate Reminder)`
 
   const requestBody = {
+    messaging_type: 'MESSAGE_TAG',
+    tag: 'CONFIRMED_EVENT_UPDATE',
     recipient: {
       id: talk.messenger_psid
     },

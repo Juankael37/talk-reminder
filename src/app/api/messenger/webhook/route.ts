@@ -103,6 +103,7 @@ async function sendMessage(sender_psid: string, text: string) {
   }
 
   const requestBody = {
+    messaging_type: 'RESPONSE',
     recipient: {
       id: sender_psid
     },
