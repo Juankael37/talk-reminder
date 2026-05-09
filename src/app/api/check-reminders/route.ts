@@ -67,6 +67,11 @@ export async function POST() {
         sentCount++
       } else if (channel === 'messenger') {
         console.log(`Talk ${talk.id} uses messenger but speaker has not opted in.`)
+      } else if (channel === 'telegram' && talk.telegram_chat_id && talk.telegram_opted_in) {
+        await sendTelegramReminder(rule, talk, supabase)
+        sentCount++
+      } else if (channel === 'telegram') {
+        console.log(`Talk ${talk.id} uses telegram but speaker has not opted in.`)
       }
     }
 
@@ -195,6 +200,45 @@ async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
     await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Messenger' })
   } catch (error) {
     console.error('Messenger error:', error)
+  }
+}
+
+async function sendTelegramReminder(rule: any, talk: any, supabase: any) {
+  console.log('Processing telegram for talk:', talk.speaker_name)
+
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.error('Missing TELEGRAM_BOT_TOKEN')
+    return
+  }
+
+  const talkDate = new Date(talk.talk_date)
+  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+
+  const messageText = `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up\n\nHi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\n📅 Date: ${formattedDate}\n🕐 Time: ${formattedTime}\n⏱ Reminder: ${rule.offset_label}\n\nWe're looking forward to your presentation! (Sent via Talk Reminder by Ortuma)`
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: talk.telegram_chat_id,
+        text: messageText
+      })
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Telegram Send API error:', JSON.stringify(errorData))
+      return
+    }
+
+    console.log('Telegram message sent to:', talk.speaker_name)
+    await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
+    await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Telegram' })
+  } catch (error) {
+    console.error('Telegram error:', error)
   }
 }
 

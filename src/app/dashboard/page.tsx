@@ -15,6 +15,7 @@ interface Talk {
   speaker_email: string | null
   notification_channel: string
   messenger_opted_in: boolean
+  telegram_opted_in: boolean
   created_at: string
   reminder_rules?: ReminderRule[]
 }
@@ -396,11 +397,16 @@ export default function DashboardPage() {
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
                                   talk.notification_channel === 'messenger'
                                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                    : talk.notification_channel === 'telegram'
+                                    ? 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400'
                                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                                 }`}>
-                                  {talk.notification_channel === 'messenger' ? 'Messenger' : 'Email'}
+                                  {talk.notification_channel === 'messenger' ? 'Messenger' : talk.notification_channel === 'telegram' ? 'Telegram' : 'Email'}
                                 </span>
                                 {talk.notification_channel === 'messenger' && !talk.messenger_opted_in && (
+                                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Pending Opt-in</span>
+                                )}
+                                {talk.notification_channel === 'telegram' && !talk.telegram_opted_in && (
                                   <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Pending Opt-in</span>
                                 )}
                               </div>
@@ -658,10 +664,20 @@ function AddTalkModal({
                 <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.9 1.442 5.485 3.708 7.151v3.298c0 .285.293.468.544.331l3.35-1.84c.767.21 1.573.32 2.398.32 5.523 0 10-4.145 10-9.259C22 6.145 17.523 2 12 2zm1.09 12.215l-2.656-2.83-5.18 2.83 5.67-6.024 2.684 2.848 5.143-2.848-5.661 6.024z"/></svg>
                 <span className={`font-medium ${textPrimary}`}>Messenger</span>
               </label>
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'telegram' ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                <input type="radio" name="channel" value="telegram" checked={notificationChannel === 'telegram'} onChange={(e) => setNotificationChannel(e.target.value)} className="hidden" />
+                <svg className="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                <span className={`font-medium ${textPrimary}`}>Telegram</span>
+              </label>
             </div>
             {notificationChannel === 'messenger' && (
               <p className={`mt-2 text-xs ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
                 <strong>Action Required:</strong> After saving, ask the speaker to send their email address to your Facebook Page in Messenger to opt-in.
+              </p>
+            )}
+            {notificationChannel === 'telegram' && (
+              <p className={`mt-2 text-xs ${theme === 'dark' ? 'text-sky-400' : 'text-sky-600'}`}>
+                <strong>Action Required:</strong> After saving, ask the speaker to send their email address to your Telegram Bot to opt-in.
               </p>
             )}
           </div>
