@@ -17,15 +17,14 @@ const splashSizes = [
 
 async function generateSplash() {
   const resDir = path.join(__dirname, 'android', 'app', 'src', 'main', 'res');
-  const sourceImage = path.join(__dirname, 'public', 'Ortuma Official logo.png');
+  const sourceImage = path.join(__dirname, 'public', 'mobile_logo.png');
   
   for (const [folder, width] of splashSizes) {
     const folderPath = path.join(resDir, folder);
     if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
     
-    // The Ortuma logo has a dark background (#141122 approx). Let's use a similar dark hex or black, but sharp fit: contain with background will handle the aspect ratio padding.
     await sharp(sourceImage)
-      .resize(width, Math.round(width * 720 / 1280), { fit: 'contain', background: { r: 20, g: 17, b: 34, alpha: 1 } })
+      .resize(width, Math.round(width * 720 / 1280), { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 1 } })
       .png()
       .toFile(path.join(folderPath, 'splash.png'));
     

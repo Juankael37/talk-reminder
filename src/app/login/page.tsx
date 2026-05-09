@@ -63,7 +63,7 @@ export default function LoginPage() {
         </button>
 
         <div className="text-center mb-8 flex flex-col items-center">
-          <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={240} height={100} className="mb-4" />
+          <Image src="/logo.png" alt="Talk Reminder Logo" width={240} height={100} className="mb-4" />
           <p className={`mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             Sign in to manage your reminders
           </p>

@@ -171,7 +171,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
               <div className="flex items-center gap-2">
-                <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={160} height={48} priority />
+                <Image src="/logo.png" alt="Talk Reminder Logo" width={160} height={48} priority />
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -266,6 +266,36 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+
+              <div>
+                <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3 mt-6`}>Settings</h3>
+                <button
+                  onClick={async () => {
+                    if (confirm('Are you absolutely sure you want to delete your account? This action cannot be undone and all your talks and reminders will be permanently deleted.')) {
+                      setRunningCheck(true);
+                      try {
+                        const { data } = await getSupabase().auth.getSession();
+                        const token = data.session?.access_token;
+                        if (!token) throw new Error('Not authenticated');
+                        const res = await fetch('/api/delete-account', {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (!res.ok) throw new Error('Failed to delete account');
+                        await getSupabase().auth.signOut();
+                        router.push('/login');
+                      } catch (err) {
+                        alert('Error: ' + (err instanceof Error ? err.message : 'Failed to delete account'));
+                        setRunningCheck(false);
+                      }
+                    }
+                  }}
+                  className="w-full py-3 px-4 bg-red-50 text-red-600 font-medium rounded-xl hover:bg-red-100 transition-all border border-red-200 flex items-center justify-center gap-2 dark:bg-red-900/20 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/40"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  Delete Account
+                </button>
+              </div>
             </div>
           </div>
         </aside>
@@ -648,7 +678,7 @@ function AddTalkModal({
               </label>
               <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'telegram' ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                 <input type="radio" name="channel" value="telegram" checked={notificationChannel === 'telegram'} onChange={(e) => setNotificationChannel(e.target.value)} className="hidden" />
-                <svg className="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                <svg className="w-5 h-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M1.946 9.315c-.522-.174-.527-.455.01-.664l19.088-7.442c.523-.204.814.07.666.587l-5.632 19.646c-.149.52-.456.634-.698.397l-4.52-4.42-3.177 3.06a.71.71 0 0 1-.502.214l.445-5.91L18.42 5.093c.31-.274-.066-.425-.48-.148L5.12 13.01l-3.174-.995z"/></svg>
                 <span className={`font-medium ${textPrimary}`}>Telegram</span>
               </label>
             </div>

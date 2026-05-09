@@ -12,7 +12,7 @@ const mipmaps = {
 
 async function generateIcons() {
   const resDir = path.join(__dirname, 'android', 'app', 'src', 'main', 'res');
-  const sourceImage = path.join(__dirname, 'public', 'Official_logo.png');
+  const sourceImage = path.join(__dirname, 'public', 'mobile_logo.png');
   
   for (const [folder, size] of Object.entries(mipmaps)) {
     const folderPath = path.join(resDir, folder);
