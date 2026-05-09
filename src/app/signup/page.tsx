@@ -76,14 +76,18 @@ export default function SignupPage() {
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/30 mb-4">
-            <span className="text-4xl font-bold text-white">M</span>
+            <span className="text-4xl font-bold text-white">T</span>
           </div>
           <h1 className={`text-3xl font-bold ${
             theme === 'dark' ? 'text-white' : 'bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'
           }`}>
-            Mate Reminder
+            Talk Reminder
           </h1>
-          <p className={`mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`mt-1 font-medium ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'} flex items-center justify-center gap-1.5`}>
+            <span className="text-sm opacity-80">by</span>
+            <span className="font-extrabold tracking-wide uppercase text-lg">Ortuma</span>
+          </p>
+          <p className={`mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             Create your account
           </p>
         </div>

@@ -1,4 +1,4 @@
-# Mate Reminder App – Complete Project Specification
+# Talk Reminder App – Complete Project Specification
 
 **Project Goal**: A multi-user mobile app (Android) that lets people schedule automated reminders for speakers. Reminders via Email (nodemailer/Gmail) and Facebook Messenger (Meta Messenger Platform API).
 **Stack**: Next.js 14 (App Router) + Supabase (Auth + DB) + nodemailer + Meta Messenger API + Capacitor (native wrapper) + Vercel (hosting + cron).

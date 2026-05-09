@@ -179,11 +179,16 @@ export default function DashboardPage() {
               </button>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-sm font-bold text-white">M</span>
+                  <span className="text-sm font-bold text-white">T</span>
                 </div>
-                <span className={`text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent ${theme === 'dark' ? 'text-white' : ''}`}>
-                  Mate Reminder
-                </span>
+                <div className="flex flex-col">
+                  <span className={`text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent leading-tight ${theme === 'dark' ? 'text-white' : ''}`}>
+                    Talk Reminder
+                  </span>
+                  <span className={`text-[10px] font-extrabold tracking-widest uppercase bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent ${theme === 'dark' ? 'opacity-90' : 'opacity-80'}`}>
+                    by Ortuma
+                  </span>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">

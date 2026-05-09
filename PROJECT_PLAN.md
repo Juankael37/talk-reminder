@@ -1,4 +1,4 @@
-# Mate Reminder - Project Plan
+# Talk Reminder - Project Plan
 
 ## 1. Project Overview
 A mobile app (Android & iOS via Capacitor) that lets users schedule automated reminders for speakers via Email. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.

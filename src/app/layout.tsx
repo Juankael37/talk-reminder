@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Mate Reminder",
-  description: "Schedule automated reminders for your speakers",
+  title: "Talk Reminder by Ortuma",
+  description: "Schedule automated reminders for your speakers, brought to you by Ortuma.",
   icons: {
     icon: "/logo.svg",
   },

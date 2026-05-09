@@ -1,12 +1,12 @@
 # Meta Messenger API Setup Guide
 
-This guide walks you through setting up a new Meta Developer account and linking it to your Mate Reminder application.
+This guide walks you through setting up a new Meta Developer account and linking it to your Talk Reminder application.
 
 ## 1. Create Your Meta App
 
 1. Go to the [Meta Developer Portal](https://developers.facebook.com/apps/) and click **Create App**.
 2. Select **Other** as the use case, then select **Business** as the app type.
-3. Give your app a name (e.g., "Mate Reminder Bot") and enter your contact email.
+3. Give your app a name (e.g., "Talk Reminder Bot") and enter your contact email.
 4. Click **Create app**.
 
 ## 2. Add Messenger to Your App

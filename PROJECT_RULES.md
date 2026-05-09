@@ -1,4 +1,4 @@
-# Mate Reminder - Project Rules & Session Tracking
+# Talk Reminder - Project Rules & Session Tracking
 
 ## Current Project Status
 **Last Updated**: 2026-04-24
@@ -15,7 +15,7 @@
 | 1 | 2025-04-20 | Planning | Project plan, UI/UX, database schema | Initial planning |
 | 2 | 2025-04-20 | Implementation | Next.js app, auth, dashboard, API | Main build |
 | 3 | 2026-04-21 | Deployment | Vercel deploy, cron setup | Ready |
-| 4 | 2026-04-22 | Brand Update | Renamed to Mate Reminder | Logo + Messenger link |
+| 4 | 2026-04-22 | Brand Update | Renamed to Talk Reminder | Logo + Messenger link |
 | 5 | 2026-04-22 | Messenger Setup | Meta account, app created | Paused |
 | 6 | 2026-04-24 | UI Updates | Dark/light mode, new M logo, splash | Full refresh |
 
