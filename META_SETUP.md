@@ -1,49 +1,60 @@
-# Meta Messenger API Setup
+# Meta Messenger API Setup Guide
 
-## Environment Variables Needed
+This guide walks you through setting up a new Meta Developer account and linking it to your Mate Reminder application.
 
-Add these to `.env.local` and Vercel Environment Variables:
+## 1. Create Your Meta App
+
+1. Go to the [Meta Developer Portal](https://developers.facebook.com/apps/) and click **Create App**.
+2. Select **Other** as the use case, then select **Business** as the app type.
+3. Give your app a name (e.g., "Mate Reminder Bot") and enter your contact email.
+4. Click **Create app**.
+
+## 2. Add Messenger to Your App
+
+1. On your App Dashboard, scroll down to the **Add products to your app** section.
+2. Find **Messenger** and click **Set Up**.
+
+## 3. Generate Environment Variables
+
+You need three environment variables for your `.env.local` and Vercel settings.
+
+### A. MESSENGER_PAGE_ACCESS_TOKEN
+1. In the left sidebar, under **Messenger**, click **API Setup**.
+2. Scroll down to the **Access Tokens** section.
+3. Click **Add or Remove Pages** and link the Facebook Page you want your bot to use (create a new Page if you don't have one).
+4. Once the page is linked, click **Generate Token**.
+5. Copy this long token. This is your `MESSENGER_PAGE_ACCESS_TOKEN`.
+
+### B. MESSENGER_APP_SECRET
+1. In the left sidebar, go to **App Settings** -> **Basic**.
+2. Find the **App Secret** field and click **Show** (you may need to enter your password).
+3. Copy this secret. This is your `MESSENGER_APP_SECRET`.
+
+### C. MESSENGER_VERIFY_TOKEN
+1. You make this up yourself! It just acts as a password between your app and Meta.
+2. Create a random string like `mate-reminder-secure-token-2024`.
+3. Save this as your `MESSENGER_VERIFY_TOKEN`.
+
+## 4. Add Variables to Your Project
+
+Add the three variables you just gathered into your `.env.local` file and to your **Vercel Environment Variables**:
 
 ```env
-# Meta Messenger API
-MESSENGER_PAGE_ACCESS_TOKEN=EAAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-MESSENGER_APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-MESSENGER_VERIFY_TOKEN=your-verify-token-here
+MESSENGER_PAGE_ACCESS_TOKEN=your_page_access_token_here
+MESSENGER_APP_SECRET=your_app_secret_here
+MESSENGER_VERIFY_TOKEN=your_custom_verify_token_here
 ```
 
-## Where to Find These
+**IMPORTANT:** Deploy your code to Vercel after adding these variables. The webhook must be live on the internet before Meta can verify it in the next step.
 
-### 1. MESSENGER_PAGE_ACCESS_TOKEN
-- Go to: https://developers.facebook.com/apps/936591262528758/messenger/
-- Generate or copy the Page Access Token
-- Looks like: `EAAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx...`
+## 5. Set Up the Webhook
 
-### 2. MESSENGER_APP_SECRET
-- Go to: https://developers.facebook.com/apps/936591262528758/dashboard/
-- Click: Settings → Basic
-- Click: Show on the App Secret field
-- Copy the secret
+Once your app is deployed to Vercel:
 
-### 3. MESSENGER_VERIFY_TOKEN
-- Create any random string (e.g., `mate-reminder-2024`)
-- Or generate one: https://randomkeygen.com/
-
-## Setup Steps After Adding Credentials
-
-1. Add environment variables to `.env.local`
-2. Add environment variables to Vercel Dashboard → Settings → Environment Variables
-3. Push to GitHub for deployment
-4. Then complete webhook setup in Meta Developer Portal
-
-## Webhook Setup in Meta Portal
-
-After deploying, you'll set up the webhook:
-
-1. Go to: https://developers.facebook.com/apps/936591262528758/messenger/
-2. Find: Webhook section
-3. Enter:
-   - **Callback URL**: `https://your-vercel-app.vercel.app/api/messenger/webhook`
-   - **Verify Token**: The same token you set in `MESSENGER_VERIFY_TOKEN`
-4. Click: Verify and Save
-
-5. Subscribe to: `messages` event
+1. Go back to your Meta Developer Dashboard.
+2. Under **Messenger** -> **API Setup**, scroll down to the **Webhooks** section.
+3. Click **Configure** or **Add Callback URL**.
+4. **Callback URL:** Enter your live Vercel URL followed by the api route: `https://YOUR-VERCEL-DOMAIN.vercel.app/api/messenger/webhook`
+5. **Verify Token:** Enter the exact string you created for `MESSENGER_VERIFY_TOKEN`.
+6. Click **Verify and Save**. (If it fails, double-check your Vercel logs to ensure the deployment finished).
+7. Finally, click **Manage** next to Webhooks and subscribe to the `messages` event.

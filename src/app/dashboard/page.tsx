@@ -13,6 +13,8 @@ interface Talk {
   talk_title: string | null
   talk_date: string
   speaker_email: string | null
+  notification_channel: string
+  messenger_opted_in: boolean
   created_at: string
   reminder_rules?: ReminderRule[]
 }
@@ -385,6 +387,18 @@ export default function DashboardPage() {
                             <div>
                               <p className={`font-medium ${textPrimary}`}>{talk.speaker_name}</p>
                               <p className={`text-sm ${textSecondary}`}>{talk.speaker_email}</p>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                                  talk.notification_channel === 'messenger'
+                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                }`}>
+                                  {talk.notification_channel === 'messenger' ? 'Messenger' : 'Email'}
+                                </span>
+                                {talk.notification_channel === 'messenger' && !talk.messenger_opted_in && (
+                                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Pending Opt-in</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -461,6 +475,7 @@ function AddTalkModal({
   const [speakerEmail, setSpeakerEmail] = useState('')
   const [talkDate, setTalkDate] = useState('')
   const [talkTime, setTalkTime] = useState('')
+  const [notificationChannel, setNotificationChannel] = useState('email')
   const [offsets, setOffsets] = useState({
     oneWeek: true,
     oneDay: true,
@@ -497,6 +512,7 @@ function AddTalkModal({
           talk_title: talkTitle || null,
           talk_date: talkDateTimeISO,
           speaker_email: speakerEmail,
+          notification_channel: notificationChannel,
         })
         .select()
         .single()
@@ -620,6 +636,29 @@ function AddTalkModal({
               placeholder="speaker@example.com"
               required
             />
+          </div>
+
+          <div>
+            <label className={`block text-sm font-semibold mb-2 ${textSecondary}`}>
+              Notification Channel
+            </label>
+            <div className="flex gap-4">
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'email' ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                <input type="radio" name="channel" value="email" checked={notificationChannel === 'email'} onChange={(e) => setNotificationChannel(e.target.value)} className="hidden" />
+                <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <span className={`font-medium ${textPrimary}`}>Email</span>
+              </label>
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'messenger' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                <input type="radio" name="channel" value="messenger" checked={notificationChannel === 'messenger'} onChange={(e) => setNotificationChannel(e.target.value)} className="hidden" />
+                <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.145 2 11.259c0 2.9 1.442 5.485 3.708 7.151v3.298c0 .285.293.468.544.331l3.35-1.84c.767.21 1.573.32 2.398.32 5.523 0 10-4.145 10-9.259C22 6.145 17.523 2 12 2zm1.09 12.215l-2.656-2.83-5.18 2.83 5.67-6.024 2.684 2.848 5.143-2.848-5.661 6.024z"/></svg>
+                <span className={`font-medium ${textPrimary}`}>Messenger</span>
+              </label>
+            </div>
+            {notificationChannel === 'messenger' && (
+              <p className={`mt-2 text-xs ${theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}`}>
+                <strong>Action Required:</strong> After saving, ask the speaker to send their email address to your Facebook Page in Messenger to opt-in.
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

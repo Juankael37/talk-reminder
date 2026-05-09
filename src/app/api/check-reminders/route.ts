@@ -57,9 +57,16 @@ export async function POST() {
       const talk = (rule as any).talks
       if (!talk) continue
 
-      if (talk?.speaker_email) {
+      const channel = talk.notification_channel || 'email'
+
+      if (channel === 'email' && talk.speaker_email) {
         await sendEmailReminder(rule, talk, supabase, transporter)
         sentCount++
+      } else if (channel === 'messenger' && talk.messenger_psid && talk.messenger_opted_in) {
+        await sendMessengerReminder(rule, talk, supabase)
+        sentCount++
+      } else if (channel === 'messenger') {
+        console.log(`Talk ${talk.id} uses messenger but speaker has not opted in.`)
       }
     }
 
@@ -141,6 +148,51 @@ async function sendEmailReminder(rule: any, talk: any, supabase: any, transporte
     await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Email' })
   } catch (emailError) {
     console.error('Email error:', emailError)
+  }
+}
+
+async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
+  console.log('Processing messenger for talk:', talk.speaker_name)
+
+  const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+  if (!PAGE_ACCESS_TOKEN) {
+    console.error('Missing MESSENGER_PAGE_ACCESS_TOKEN')
+    return
+  }
+
+  const talkDate = new Date(talk.talk_date)
+  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+
+  const messageText = `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up\n\nHi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\n📅 Date: ${formattedDate}\n🕐 Time: ${formattedTime}\n⏱ Reminder: ${rule.offset_label}\n\nWe're looking forward to your presentation! (Sent via Mate Reminder)`
+
+  const requestBody = {
+    recipient: {
+      id: talk.messenger_psid
+    },
+    message: {
+      text: messageText
+    }
+  }
+
+  try {
+    const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Meta Send API error:', JSON.stringify(errorData))
+      return
+    }
+
+    console.log('Messenger message sent to:', talk.speaker_name)
+    await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
+    await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Messenger' })
+  } catch (error) {
+    console.error('Messenger error:', error)
   }
 }
 
