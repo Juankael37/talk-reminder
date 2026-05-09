@@ -169,6 +169,8 @@ export default function LoginPage() {
               <a href="/privacy" className="hover:text-indigo-500 transition-colors">Privacy Policy</a>
               <span>&bull;</span>
               <a href="/terms" className="hover:text-indigo-500 transition-colors">Terms of Service</a>
+              <span>&bull;</span>
+              <a href="/data-deletion" className="hover:text-indigo-500 transition-colors">Data Deletion</a>
             </div>
           </div>
         </div>

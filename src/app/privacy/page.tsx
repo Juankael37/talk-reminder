@@ -1,9 +1,11 @@
 'use client'
 
 import { useTheme } from '@/components/ThemeProvider'
+import { useRouter } from 'next/navigation'
 
 export default function PrivacyPolicyPage() {
   const { theme } = useTheme()
+  const router = useRouter()
 
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900'
   const textSecondary = theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -14,6 +16,15 @@ export default function PrivacyPolicyPage() {
 
   return (
     <div className={`min-h-screen ${bgMain} py-12 px-4 sm:px-6 lg:px-8`}>
+      <div className="max-w-3xl mx-auto mb-6">
+        <button 
+          onClick={() => router.back()}
+          className={`flex items-center gap-2 ${textSecondary} hover:text-indigo-500 transition-colors`}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          <span className="font-medium">Go Back</span>
+        </button>
+      </div>
       <div className={`max-w-3xl mx-auto ${bgCard} rounded-2xl shadow-sm border ${borderColor} overflow-hidden`}>
         <div className={`px-6 py-8 sm:p-10 border-b ${borderColor}`}>
           <h1 className={`text-3xl font-bold ${textPrimary} mb-2`}>Privacy Policy</h1>
