@@ -76,7 +76,9 @@ export default function SignupPage() {
         </button>
 
         <div className="text-center mb-8 flex flex-col items-center">
-          <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={240} height={100} className="mb-4" />
+          <div className={theme === 'dark' ? 'bg-white/90 p-2 rounded-xl mb-4' : 'mb-4'}>
+            <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={240} height={100} />
+          </div>
           <p className={`mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             Create your account
           </p>
