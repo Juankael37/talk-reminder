@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/components/ThemeProvider'
+import Image from 'next/image'
 
 interface Talk {
   id: string
@@ -134,19 +135,19 @@ export default function DashboardPage() {
     return (
       <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
         theme === 'dark' 
-          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-          : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+          ? 'bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900' 
+          : 'bg-gradient-to-br from-orange-50 via-white to-orange-50'
       }`}>
         <div className="relative">
-          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+          <div className="w-16 h-16 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
         </div>
       </div>
     )
   }
 
   const bgMain = theme === 'dark' 
-    ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-    : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+    ? 'bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900' 
+    : 'bg-gradient-to-br from-orange-50 via-white to-orange-50'
   const bgCard = theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'
   const bgCardHover = theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-50/50'
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -170,17 +171,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-sm font-bold text-white">T</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className={`text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent leading-tight ${theme === 'dark' ? 'text-white' : ''}`}>
-                    Talk Reminder
-                  </span>
-                  <span className={`text-[10px] font-extrabold tracking-widest uppercase bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent ${theme === 'dark' ? 'opacity-90' : 'opacity-80'}`}>
-                    by Ortuma
-                  </span>
-                </div>
+                <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={160} height={48} priority />
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -233,9 +224,9 @@ export default function DashboardPage() {
               <div>
                 <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Statistics</h3>
                 <div className="space-y-3">
-                  <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gradient-to-r from-indigo-50 to-indigo-100'}`}>
-                    <p className={`text-xs font-medium ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`}>Total Talks</p>
-                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-indigo-300' : 'text-indigo-700'}`}>{talks.length}</p>
+                  <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gradient-to-r from-orange-50 to-orange-100'}`}>
+                    <p className={`text-xs font-medium ${theme === 'dark' ? 'text-orange-400' : 'text-orange-600'}`}>Total Talks</p>
+                    <p className={`text-2xl font-bold ${theme === 'dark' ? 'text-orange-300' : 'text-orange-700'}`}>{talks.length}</p>
                   </div>
                   <div className={`p-4 rounded-xl ${theme === 'dark' ? 'bg-gray-700' : 'bg-gradient-to-r from-amber-50 to-amber-100'}`}>
                     <p className={`text-xs font-medium ${theme === 'dark' ? 'text-amber-400' : 'text-amber-600'}`}>Pending Reminders</p>
@@ -253,7 +244,7 @@ export default function DashboardPage() {
                 <button
                   onClick={runCheck}
                   disabled={runningCheck}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-medium rounded-xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <svg className={`w-5 h-5 ${runningCheck ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -299,8 +290,8 @@ export default function DashboardPage() {
                   <p className={`text-sm font-medium ${textSecondary}`}>Total Talks</p>
                   <p className={`text-3xl font-bold mt-1 ${textPrimary}`}>{talks.length}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
@@ -336,7 +327,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="w-full sm:w-auto mb-8 py-4 px-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-2xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto mb-8 py-4 px-8 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-semibold rounded-2xl hover:from-orange-700 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -355,7 +346,7 @@ export default function DashboardPage() {
               <p className={`mb-6 ${textSecondary}`}>Create your first talk to start scheduling reminders</p>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="text-indigo-600 font-medium hover:text-indigo-700 transition"
+                className="text-orange-600 font-medium hover:text-orange-700 transition"
               >
                 Add your first talk
               </button>
@@ -378,7 +369,7 @@ export default function DashboardPage() {
                       <tr key={talk.id} className={`hover:${theme === 'dark' ? 'bg-gray-700/50' : 'bg-gray-50/50'} transition`}>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center text-white font-semibold text-sm">
                               {talk.speaker_name.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -607,7 +598,7 @@ function AddTalkModal({
               type="text"
               value={speakerName}
               onChange={(e) => setSpeakerName(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${inputBg}`}
               placeholder="John Doe"
               required
             />
@@ -621,7 +612,7 @@ function AddTalkModal({
               type="text"
               value={talkTitle}
               onChange={(e) => setTalkTitle(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${inputBg}`}
               placeholder="Topic of the talk"
             />
           </div>
@@ -634,7 +625,7 @@ function AddTalkModal({
               type="email"
               value={speakerEmail}
               onChange={(e) => setSpeakerEmail(e.target.value)}
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
+              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${inputBg}`}
               placeholder="speaker@example.com"
               required
             />
@@ -645,9 +636,9 @@ function AddTalkModal({
               Notification Channel
             </label>
             <div className="flex gap-4">
-              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'email' ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+              <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'email' ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                 <input type="radio" name="channel" value="email" checked={notificationChannel === 'email'} onChange={(e) => setNotificationChannel(e.target.value)} className="hidden" />
-                <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                 <span className={`font-medium ${textPrimary}`}>Email</span>
               </label>
               <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition ${notificationChannel === 'messenger' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
@@ -682,7 +673,7 @@ function AddTalkModal({
                 type="date"
                 value={talkDate}
                 onChange={(e) => setTalkDate(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${inputBg}`}
                 required
               />
             </div>
@@ -694,7 +685,7 @@ function AddTalkModal({
                 type="time"
                 value={talkTime}
                 onChange={(e) => setTalkTime(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${inputBg}`}
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${inputBg}`}
                 required
               />
             </div>
@@ -710,7 +701,7 @@ function AddTalkModal({
                   type="checkbox"
                   checked={offsets.oneWeek}
                   onChange={(e) => setOffsets({ ...offsets, oneWeek: e.target.checked })}
-                  className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
                 />
                 <span className={`text-sm font-medium ${textSecondary}`}>1 week before</span>
               </label>
@@ -719,7 +710,7 @@ function AddTalkModal({
                   type="checkbox"
                   checked={offsets.oneDay}
                   onChange={(e) => setOffsets({ ...offsets, oneDay: e.target.checked })}
-                  className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
                 />
                 <span className={`text-sm font-medium ${textSecondary}`}>1 day before</span>
               </label>
@@ -728,7 +719,7 @@ function AddTalkModal({
                   type="checkbox"
                   checked={offsets.custom}
                   onChange={(e) => setOffsets({ ...offsets, custom: e.target.checked })}
-                  className="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  className="w-5 h-5 text-orange-600 rounded border-gray-300 focus:ring-orange-500"
                 />
                 <span className={`text-sm font-medium ${textSecondary}`}>Custom:</span>
                 {offsets.custom && (
@@ -766,7 +757,7 @@ function AddTalkModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-orange-600 to-orange-600 text-white font-medium rounded-xl hover:from-orange-700 hover:to-orange-700 transition disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save Talk'}
             </button>

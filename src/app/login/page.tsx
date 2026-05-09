@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/components/ThemeProvider'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -38,8 +39,8 @@ export default function LoginPage() {
   return (
     <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${
       theme === 'dark' 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'
+        ? 'bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900' 
+        : 'bg-gradient-to-br from-orange-50 via-white to-orange-50'
     }`}>
       <div className="w-full max-w-md">
         <button
@@ -61,19 +62,8 @@ export default function LoginPage() {
           )}
         </button>
 
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-xl shadow-indigo-500/30 mb-4">
-            <span className="text-4xl font-bold text-white">T</span>
-          </div>
-          <h1 className={`text-3xl font-bold ${
-            theme === 'dark' ? 'text-white' : 'bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'
-          }`}>
-            Talk Reminder
-          </h1>
-          <p className={`mt-1 font-medium ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'} flex items-center justify-center gap-1.5`}>
-            <span className="text-sm opacity-80">by</span>
-            <span className="font-extrabold tracking-wide uppercase text-lg">Ortuma</span>
-          </p>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <Image src="/Official_logo.png" alt="Talk Reminder Logo" width={240} height={100} className="mb-4" />
           <p className={`mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             Sign in to manage your reminders
           </p>
@@ -101,7 +91,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition ${
+                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${
                   theme === 'dark'
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                     : 'bg-gray-50/50 border-gray-200 text-gray-900'
@@ -122,7 +112,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition pr-12 ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition pr-12 ${
                     theme === 'dark'
                       ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-gray-50/50 border-gray-200 text-gray-900'
@@ -149,29 +139,29 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg shadow-orange-500/25 disabled:opacity-50"
+              >
+                {loading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
 
-          <div className="mt-6 text-center space-y-4">
-            <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              Don't have an account?{' '}
-              <a href="/signup" className="text-indigo-600 font-medium hover:text-indigo-700">
-                Sign up
-              </a>
-            </p>
-            <div className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} flex items-center justify-center gap-3`}>
-              <a href="/privacy" className="hover:text-indigo-500 transition-colors">Privacy Policy</a>
-              <span>&bull;</span>
-              <a href="/terms" className="hover:text-indigo-500 transition-colors">Terms of Service</a>
-              <span>&bull;</span>
-              <a href="/data-deletion" className="hover:text-indigo-500 transition-colors">Data Deletion</a>
-            </div>
+            <div className="mt-6 text-center space-y-4">
+              <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                Don't have an account?{' '}
+                <a href="/signup" className="text-orange-600 font-medium hover:text-orange-700">
+                  Sign up
+                </a>
+              </p>
+              <div className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} flex items-center justify-center gap-3`}>
+                <a href="/privacy" className="hover:text-orange-500 transition-colors">Privacy Policy</a>
+                <span>&bull;</span>
+                <a href="/terms" className="hover:text-orange-500 transition-colors">Terms of Service</a>
+                <span>&bull;</span>
+                <a href="/data-deletion" className="hover:text-orange-500 transition-colors">Data Deletion</a>
+              </div>
           </div>
         </div>
       </div>

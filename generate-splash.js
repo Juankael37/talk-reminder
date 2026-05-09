@@ -2,18 +2,6 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const svg = `<svg width="1280" height="720" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="1280" y2="720" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#6366F1"/>
-      <stop offset="100%" stop-color="#8B5CF6"/>
-    </linearGradient>
-  </defs>
-  <rect width="1280" height="720" fill="url(#bgGrad)"/>
-  <text x="640" y="420" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="320" font-weight="bold">T</text>
-  <text x="640" y="540" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="64" font-weight="500">Talk Reminder</text>
-</svg>`;
-
 const splashSizes = [
   ['drawable-land-hdpi', 800],
   ['drawable-land-mdpi', 480],
@@ -29,13 +17,15 @@ const splashSizes = [
 
 async function generateSplash() {
   const resDir = path.join(__dirname, 'android', 'app', 'src', 'main', 'res');
+  const sourceImage = path.join(__dirname, 'public', 'Ortuma Official logo.png');
   
   for (const [folder, width] of splashSizes) {
     const folderPath = path.join(resDir, folder);
     if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
     
-    await sharp(Buffer.from(svg))
-      .resize(width, Math.round(width * 720 / 1280))
+    // The Ortuma logo has a dark background (#141122 approx). Let's use a similar dark hex or black, but sharp fit: contain with background will handle the aspect ratio padding.
+    await sharp(sourceImage)
+      .resize(width, Math.round(width * 720 / 1280), { fit: 'contain', background: { r: 20, g: 17, b: 34, alpha: 1 } })
       .png()
       .toFile(path.join(folderPath, 'splash.png'));
     
