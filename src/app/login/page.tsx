@@ -158,13 +158,18 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-4">
             <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
               Don't have an account?{' '}
               <a href="/signup" className="text-indigo-600 font-medium hover:text-indigo-700">
                 Sign up
               </a>
             </p>
+            <div className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'} flex items-center justify-center gap-3`}>
+              <a href="/privacy" className="hover:text-indigo-500 transition-colors">Privacy Policy</a>
+              <span>&bull;</span>
+              <a href="/terms" className="hover:text-indigo-500 transition-colors">Terms of Service</a>
+            </div>
           </div>
         </div>
       </div>
