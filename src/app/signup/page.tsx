@@ -98,26 +98,6 @@ export default function SignupPage() {
               <label className={`block text-sm font-semibold mb-2 ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition ${
-                  theme === 'dark'
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                    : 'bg-gray-50/50 border-gray-200 text-gray-900'
-                }`}
-                placeholder="John Doe"
-                required
-              />
-            </div>
-
-            <div>
-              <label className={`block text-sm font-semibold mb-2 ${
-                theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
-              }`}>
                 Email
               </label>
               <input
