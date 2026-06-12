@@ -39,7 +39,7 @@
 - [x] Create Add Talk form with validation
 - [x] Implement reminder offset selector
 - [x] Add delete talk functionality
-- [x] Implement reminders API route with Email (nodemailer)
+- [x] Implement reminders API route with Email (Resend)
 - [x] Add dark/light mode toggle
 - [x] Create custom M logo
 - [x] Update splash screen with M logo
@@ -55,7 +55,7 @@
 
 ## Key References
 - **Database**: Supabase PostgreSQL with RLS
-- **Email**: nodemailer (Gmail)
+- **Email**: Resend (ortuma.site)
 - **Mobile**: Capacitor (Android)
 - **Hosting**: Vercel
 - **Scheduling**: Vercel Cron (built-in)

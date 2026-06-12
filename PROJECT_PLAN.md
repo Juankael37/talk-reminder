@@ -1,12 +1,14 @@
 # Talk Reminder - Project Plan
 
 ## 1. Project Overview
-A mobile app (Android & iOS via Capacitor) that lets users schedule automated reminders for speakers via Email. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.
+A mobile app (Android & iOS via Capacitor) that lets users schedule automated reminders for speakers via Email, Facebook Messenger, or Telegram. Users can set multiple reminder offsets (e.g., 1 week before, 1 day before, custom time) before a talk date.
 
 **Tech Stack:**
 - **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
 - **Backend**: Supabase (PostgreSQL + Auth)
-- **Email**: nodemailer (Gmail)
+- **Email**: Resend (ortuma.site)
+- **Messenger**: Meta Messenger Platform API
+- **Telegram**: Telegram Bot API
 - **Mobile Wrapper**: Capacitor
 - **Hosting**: Vercel
 - **Scheduling**: Vercel Cron (built-in)
@@ -22,6 +24,10 @@ CREATE TABLE talks (
   talk_date TIMESTAMPTZ NOT NULL,
   notification_channel TEXT DEFAULT 'email',
   speaker_email TEXT,
+  messenger_psid TEXT,
+  messenger_opted_in BOOLEAN DEFAULT false,
+  telegram_chat_id TEXT,
+  telegram_opted_in BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -51,6 +57,8 @@ CREATE TABLE reminder_logs (
 |----------|--------|-------------|
 | `/api/auth/callback/route.ts` | GET | Supabase auth callback |
 | `/api/check-reminders/route.ts` | GET, POST | Trigger reminder check (cron + manual) |
+| `/api/messenger/webhook/route.ts` | GET, POST | Meta Messenger webhook (opt-in + messages) |
+| `/api/telegram/webhook/route.ts` | POST | Telegram Bot webhook (opt-in + messages) |
 
 ## 4. UI/UX Design
 
@@ -90,7 +98,7 @@ CREATE TABLE reminder_logs (
 - [x] Create Add Talk form with validation
 - [x] Implement reminder offset selector
 - [x] Add delete talk functionality
-- [x] Implement `/api/check-reminders` with Email (nodemailer)
+- [x] Implement `/api/check-reminders` with Email (Resend)
 
 ### Phase 3: Mobile Build ✓
 - [x] Build Android APK with custom M icon
@@ -100,8 +108,10 @@ CREATE TABLE reminder_logs (
 - [x] Deploy to Vercel
 - [x] Configure Vercel cron
 
-### Phase 5: Messenger Integration
-- [ ] Future: Add Facebook Messenger support
+### Phase 5: Messaging Integration ✓
+- [x] Add Facebook Messenger support (webhook + opt-in + send)
+- [x] Add Telegram support (webhook + opt-in + send)
+- [x] Update dashboard UI with channel selector (Email/Messenger/Telegram)
 
 ## 6. Cost
 
@@ -109,7 +119,9 @@ CREATE TABLE reminder_logs (
 |---------|-----------|
 | Vercel | ✓ (hobby) |
 | Supabase | ✓ 500MB |
-| Gmail | ✓ (personal) |
+| Resend | ✓ (free tier) |
+| Meta Messenger | ✓ Free |
+| Telegram Bot | ✓ Free |
 | Capacitor | ✓ Free |
 
 **Target Cost: $0/mo**
