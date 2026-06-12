@@ -1,22 +1,18 @@
 import { NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
-const getTransporter = () => {
-  const email = process.env.EMAIL_USER
-  const password = process.env.EMAIL_PASS
+const getResend = () => {
+  const apiKey = process.env.RESEND_API_KEY
 
-  if (!email || !password) {
-    console.log('No email config - emails will be logged only')
+  if (!apiKey) {
+    console.log('No RESEND_API_KEY - emails will be logged only')
     return null
   }
 
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: email, pass: password },
-  })
+  return new Resend(apiKey)
 }
 
 export async function POST() {
@@ -50,7 +46,7 @@ export async function POST() {
     }
 
     console.log('Found due rules:', dueRules.length)
-    const transporter = getTransporter()
+    const resend = getResend()
     let sentCount = 0
 
     for (const rule of dueRules) {
@@ -60,7 +56,7 @@ export async function POST() {
       const channel = talk.notification_channel || 'email'
 
       if (channel === 'email' && talk.speaker_email) {
-        await sendEmailReminder(rule, talk, supabase, transporter)
+        await sendEmailReminder(rule, talk, supabase, resend)
         sentCount++
       } else if (channel === 'messenger' && talk.messenger_psid && talk.messenger_opted_in) {
         await sendMessengerReminder(rule, talk, supabase)
@@ -82,7 +78,7 @@ export async function POST() {
   }
 }
 
-async function sendEmailReminder(rule: any, talk: any, supabase: any, transporter: any) {
+async function sendEmailReminder(rule: any, talk: any, supabase: any, resend: Resend | null) {
   console.log('Processing email for talk:', talk.speaker_name)
 
   const tz = process.env.NEXT_PUBLIC_TIMEZONE || 'Asia/Manila'
@@ -139,14 +135,19 @@ async function sendEmailReminder(rule: any, talk: any, supabase: any, transporte
   const plainText = `Hi ${talk.speaker_name},\n\nReminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\nDate: ${formattedDate}\nTime: ${formattedTime}\nReminder: ${rule.offset_label}\n\n- Sent via Talk Reminder by Ortuma`
 
   try {
-    if (transporter) {
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+    if (resend) {
+      const { error: sendError } = await resend.emails.send({
+        from: 'Talk Reminder <reminder-noreply@ortuma.site>',
         to: talk.speaker_email,
         subject: `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
         html: htmlContent,
         text: plainText,
       })
+
+      if (sendError) {
+        throw new Error(sendError.message)
+      }
+
       console.log('Email sent to:', talk.speaker_email)
     }
 

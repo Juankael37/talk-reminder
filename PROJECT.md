@@ -1,7 +1,7 @@
 # Talk Reminder App – Complete Project Specification
 
-**Project Goal**: A multi-user mobile app (Android) that lets people schedule automated reminders for speakers. Reminders via Email (nodemailer/Gmail) and Facebook Messenger (Meta Messenger Platform API).
-**Stack**: Next.js 14 (App Router) + Supabase (Auth + DB) + nodemailer + Meta Messenger API + Capacitor (native wrapper) + Vercel (hosting + cron).
+**Project Goal**: A multi-user mobile app (Android) that lets people schedule automated reminders for speakers. Reminders via Email (Resend/ortuma.site), Facebook Messenger (Meta Messenger Platform API), and Telegram (Telegram Bot API).
+**Stack**: Next.js 14 (App Router) + Supabase (Auth + DB) + Resend + Meta Messenger API + Telegram Bot API + Capacitor (native wrapper) + Vercel (hosting + cron).
 
 ---
 
@@ -9,8 +9,9 @@
 1. User sign-up / login (email + password) using Supabase Auth.
 2. After login, user can:
    - Add a talk: speaker name, talk title (optional), talk date & time.
-   - Choose notification method: Email.
+   - Choose notification method: Email, Facebook Messenger, or Telegram.
    - If Email: speaker email field.
+   - If Messenger/Telegram: speaker email field (used for opt-in matching).
    - Set reminder offsets: "1 week before", "1 day before", plus a custom offset (e.g., "2 hours before").
    - Each offset creates a separate reminder rule.
 3. Edit / delete any talk they created.
@@ -35,6 +36,8 @@ CREATE TABLE talks (
   speaker_email TEXT,
   messenger_psid TEXT,
   messenger_opted_in BOOLEAN DEFAULT false,
+  telegram_chat_id TEXT,
+  telegram_opted_in BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
