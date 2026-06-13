@@ -5,6 +5,10 @@
       "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VDpQIzECWmClx34252ZdyA_8V6LCbXa"
     }
   },
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://vfvhpuiklqayxznxmhgo.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VDpQIzECWmClx34252ZdyA_8V6LCbXa"
+  },
 
   "alias": "talk-reminder.vercel.app"
 }
