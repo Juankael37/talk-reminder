@@ -38,7 +38,11 @@ async function isAuthorized(request: Request): Promise<boolean> {
         if (user && !error) {
           return true
         }
-      } catch {
+        if (error) {
+          logger.warn('check_reminders.auth_token_failed', { message: error.message })
+        }
+      } catch (err) {
+        logger.error('check_reminders.auth_error', { message: err instanceof Error ? err.message : String(err) })
       }
     }
   }
