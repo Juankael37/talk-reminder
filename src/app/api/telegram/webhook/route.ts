@@ -22,6 +22,7 @@ const getTelegramBotToken = () => process.env.TELEGRAM_BOT_TOKEN
 const getWebhookSecret = () => getOptionalEnv('TELEGRAM_WEBHOOK_SECRET')
 
 export async function POST(request: Request) {
+  logger.info('telegram.webhook_received')
   const rl = applyRateLimit(request, 'telegram-webhook', { limit: 60, windowMs: 60_000 })
   if (!rl.allowed) return rl.response!
 
@@ -32,8 +33,17 @@ export async function POST(request: Request) {
   }
 
   const provided = request.headers.get('x-telegram-bot-api-secret-token')
+  logger.info('telegram.secret_check', {
+    hasProvided: !!provided,
+    providedLength: provided?.length || 0,
+    hasExpected: !!webhookSecret,
+    expectedLength: webhookSecret?.length || 0
+  })
+
   if (!verifyTelegramSecret(provided, webhookSecret)) {
-    logger.warn('telegram.secret_invalid')
+    logger.warn('telegram.secret_invalid', {
+      provided: provided ? `${provided.slice(0, 3)}...` : null
+    })
     return new NextResponse('Forbidden', { status: 403 })
   }
 
@@ -124,7 +134,8 @@ async function sendMessage(chatId: number | string, text: string) {
     })
 
     if (!response.ok) {
-      logger.error('telegram.send_api_error', { status: response.status })
+      const respText = await response.text().catch(() => '')
+      logger.error('telegram.send_api_error', { status: response.status, response: respText })
     }
   } catch (error) {
     logger.error('telegram.send_failed', { message: error instanceof Error ? error.message : 'unknown' })
