@@ -164,7 +164,8 @@ async function sendMessage(sender_psid: string, text: string) {
     })
 
     if (!response.ok) {
-      logger.error('messenger.send_api_error', { status: response.status })
+      const errorData = await response.json().catch(() => ({}))
+      logger.error('messenger.send_api_error', { status: response.status, error: errorData })
     }
   } catch (error) {
     logger.error('messenger.send_failed', { message: error instanceof Error ? error.message : 'unknown' })

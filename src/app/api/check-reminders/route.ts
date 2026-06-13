@@ -232,8 +232,8 @@ async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      logger.error('check_reminders.messenger_api_error', { ruleId: rule.id, status: response.status })
+      const errorData = await response.json().catch(() => ({}))
+      logger.error('check_reminders.messenger_api_error', { ruleId: rule.id, status: response.status, error: errorData })
       return
     }
 
