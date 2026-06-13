@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/components/ThemeProvider'
-import Image from 'next/image'
+import { TextLogo } from '@/components/TextLogo'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -30,8 +30,8 @@ export default function SignupPage() {
       return
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
       setLoading(false)
       return
     }
@@ -76,7 +76,7 @@ export default function SignupPage() {
         </button>
 
         <div className="text-center mb-8 flex flex-col items-center">
-          <Image src="/logo.png" alt="Talk Reminder Logo" width={240} height={100} className="mb-4" />
+          <TextLogo size="lg" />
           <p className={`mt-3 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
             Create your account
           </p>

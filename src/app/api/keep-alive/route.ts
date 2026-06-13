@@ -1,33 +1,51 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireEnv } from '@/lib/env'
+import { logger } from '@/lib/logger'
+import { timingSafeEqualStr } from '@/lib/webhook-security'
+import { applyRateLimit, genericError } from '@/lib/api-guard'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+function isAuthorized(request: Request): boolean {
+  const expected = process.env.CRON_SECRET
+  if (!expected) return false
+  const auth = request.headers.get('authorization')
+  if (auth?.startsWith('Bearer ')) {
+    return timingSafeEqualStr(auth.slice('Bearer '.length), expected)
+  }
+  const url = new URL(request.url)
+  const querySecret = url.searchParams.get('secret')
+  if (querySecret) {
+    return timingSafeEqualStr(querySecret, expected)
+  }
+  return false
+}
+
+export async function GET(request: Request) {
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl = applyRateLimit(request, 'keep-alive', { limit: 6, windowMs: 60_000 })
+  if (!rl.allowed) return rl.response!
+
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceKey) {
-      return new NextResponse('Missing credentials', { status: 500 })
-    }
-
+    const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+    const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(supabaseUrl, serviceKey)
-    
-    // Perform a lightweight query to wake up / keep the database active
-    const { count, error } = await supabase
+
+    const { error } = await supabase
       .from('talks')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { head: true })
 
     if (error) {
-      console.error('Keep-alive ping failed:', error)
-      return new NextResponse('Ping failed', { status: 500 })
+      logger.error('keep_alive.ping_failed', { message: error.message })
+      return NextResponse.json({ ok: false }, { status: 500 })
     }
 
-    console.log('Keep-alive ping successful.')
-    return new NextResponse('OK', { status: 200 })
+    return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Error during keep-alive ping:', error)
-    return new NextResponse('Internal Error', { status: 500 })
+    return genericError('keep-alive', error)
   }
 }
