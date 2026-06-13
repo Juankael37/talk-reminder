@@ -27,9 +27,9 @@ type MessengerBody = {
   entry?: MessengerEntry[]
 }
 
-const VERIFY_TOKEN = process.env.MESSENGER_VERIFY_TOKEN
-const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
-const APP_SECRET = getOptionalEnv('MESSENGER_APP_SECRET')
+const getVerifyToken = () => process.env.MESSENGER_VERIFY_TOKEN
+const getPageAccessToken = () => process.env.MESSENGER_PAGE_ACCESS_TOKEN
+const getAppSecret = () => getOptionalEnv('MESSENGER_APP_SECRET')
 
 export async function GET(request: Request) {
   const rl = applyRateLimit(request, 'messenger-webhook-get', { limit: 10, windowMs: 60_000 })
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   const challenge = searchParams.get('hub.challenge')
 
   if (mode && token) {
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    if (mode === 'subscribe' && token === getVerifyToken()) {
       logger.info('messenger.webhook_verified')
       return new NextResponse(challenge ?? '', { status: 200 })
     }
@@ -55,7 +55,8 @@ export async function POST(request: Request) {
   const rl = applyRateLimit(request, 'messenger-webhook-post', { limit: 60, windowMs: 60_000 })
   if (!rl.allowed) return rl.response!
 
-  if (!APP_SECRET) {
+  const appSecret = getAppSecret()
+  if (!appSecret) {
     logger.error('messenger.app_secret_missing')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
   const rawBody = await request.text()
   const sigHeader = request.headers.get('x-hub-signature-256')
 
-  if (!verifyMetaSignature(rawBody, sigHeader, APP_SECRET)) {
+  if (!verifyMetaSignature(rawBody, sigHeader, appSecret)) {
     logger.warn('messenger.signature_invalid')
     return new NextResponse('Forbidden', { status: 403 })
   }
@@ -143,7 +144,8 @@ async function handleMessage(sender_psid: string, received_message: string) {
 }
 
 async function sendMessage(sender_psid: string, text: string) {
-  if (!PAGE_ACCESS_TOKEN) {
+  const pageAccessToken = getPageAccessToken()
+  if (!pageAccessToken) {
     logger.error('messenger.token_missing')
     return
   }
@@ -155,7 +157,7 @@ async function sendMessage(sender_psid: string, text: string) {
   }
 
   try {
-    const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
+    const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${pageAccessToken}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),

@@ -6,7 +6,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useTheme } from '@/components/ThemeProvider'
-import Image from 'next/image'
+import { TextLogo } from '@/components/TextLogo'
 
 interface Talk {
   id: string
@@ -77,13 +77,22 @@ export default function DashboardPage() {
     setRunningCheck(true)
     setSidebarOpen(false)
     try {
-      const response = await fetch('/api/check-reminders', { method: 'POST' })
-      const data = await response.json()
+      const { data } = await getSupabase().auth.getSession()
+      const token = data.session?.access_token
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      const response = await fetch('/api/check-reminders', {
+        method: 'POST',
+        headers
+      })
+      const responseData = await response.json()
       if (response.ok) {
         fetchTalks()
-        alert(`Check complete: ${data.sent || 0} reminders processed`)
+        alert(`Check complete: ${responseData.sent || 0} reminders processed`)
       } else {
-        alert(`Error: ${data.error || 'Unknown error'}`)
+        alert(`Error: ${responseData.error || 'Unknown error'}`)
       }
     } catch (error) {
       alert('Failed to run check')
@@ -171,7 +180,7 @@ export default function DashboardPage() {
                 </svg>
               </button>
               <div className="flex items-center gap-2">
-                <Image src="/logo.png" alt="Talk Reminder Logo" width={160} height={48} priority />
+                <TextLogo size="md" />
               </div>
             </div>
             <div className="flex items-center gap-2">

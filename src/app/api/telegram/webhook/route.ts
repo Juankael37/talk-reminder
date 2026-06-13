@@ -18,20 +18,21 @@ type TelegramUpdate = {
   }
 }
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const WEBHOOK_SECRET = getOptionalEnv('TELEGRAM_WEBHOOK_SECRET')
+const getTelegramBotToken = () => process.env.TELEGRAM_BOT_TOKEN
+const getWebhookSecret = () => getOptionalEnv('TELEGRAM_WEBHOOK_SECRET')
 
 export async function POST(request: Request) {
   const rl = applyRateLimit(request, 'telegram-webhook', { limit: 60, windowMs: 60_000 })
   if (!rl.allowed) return rl.response!
 
-  if (!WEBHOOK_SECRET) {
+  const webhookSecret = getWebhookSecret()
+  if (!webhookSecret) {
     logger.error('telegram.webhook_secret_missing')
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 
   const provided = request.headers.get('x-telegram-bot-api-secret-token')
-  if (!verifyTelegramSecret(provided, WEBHOOK_SECRET)) {
+  if (!verifyTelegramSecret(provided, webhookSecret)) {
     logger.warn('telegram.secret_invalid')
     return new NextResponse('Forbidden', { status: 403 })
   }
@@ -106,13 +107,14 @@ async function handleMessage(chatId: number | string, received_message: string) 
 }
 
 async function sendMessage(chatId: number | string, text: string) {
-  if (!TELEGRAM_BOT_TOKEN) {
+  const botToken = getTelegramBotToken()
+  if (!botToken) {
     logger.error('telegram.token_missing')
     return
   }
 
   try {
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

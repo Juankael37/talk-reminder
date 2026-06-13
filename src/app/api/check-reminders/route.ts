@@ -11,17 +11,36 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-function isAuthorized(request: Request): boolean {
+async function isAuthorized(request: Request): Promise<boolean> {
   const expected = process.env.CRON_SECRET
-  if (!expected) return false
   const auth = request.headers.get('authorization')
-  if (auth?.startsWith('Bearer ')) {
-    return timingSafeEqualStr(auth.slice('Bearer '.length), expected)
-  }
   const url = new URL(request.url)
   const querySecret = url.searchParams.get('secret')
-  if (querySecret) {
-    return timingSafeEqualStr(querySecret, expected)
+  if (expected) {
+    if (auth?.startsWith('Bearer ')) {
+      const token = auth.slice('Bearer '.length)
+      if (timingSafeEqualStr(token, expected)) {
+        return true
+      }
+    }
+    if (querySecret && timingSafeEqualStr(querySecret, expected)) {
+      return true
+    }
+  }
+  if (auth?.startsWith('Bearer ')) {
+    const token = auth.slice('Bearer '.length).trim()
+    if (token) {
+      try {
+        const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+        const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+        const supabase = createClient(supabaseUrl, serviceKey)
+        const { data: { user }, error } = await supabase.auth.getUser(token)
+        if (user && !error) {
+          return true
+        }
+      } catch {
+      }
+    }
   }
   return false
 }
@@ -36,7 +55,7 @@ const getResend = () => {
 }
 
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!(await isAuthorized(request))) {
     logger.warn('check_reminders.unauthorized', { ip: request.headers.get('x-forwarded-for') })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
