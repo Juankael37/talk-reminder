@@ -1,35 +1,55 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
+import { requireEnv, warnIfMissingServer } from '@/lib/env'
+import { logger } from '@/lib/logger'
+import { timingSafeEqualStr } from '@/lib/webhook-security'
+import {
+  applyRateLimit,
+  genericError,
+} from '@/lib/api-guard'
 
 export const dynamic = 'force-dynamic'
 
+function isAuthorized(request: Request): boolean {
+  const expected = process.env.CRON_SECRET
+  if (!expected) return false
+  const auth = request.headers.get('authorization')
+  if (auth?.startsWith('Bearer ')) {
+    return timingSafeEqualStr(auth.slice('Bearer '.length), expected)
+  }
+  const url = new URL(request.url)
+  const querySecret = url.searchParams.get('secret')
+  if (querySecret) {
+    return timingSafeEqualStr(querySecret, expected)
+  }
+  return false
+}
+
 const getResend = () => {
   const apiKey = process.env.RESEND_API_KEY
-
   if (!apiKey) {
-    console.log('No RESEND_API_KEY - emails will be logged only')
+    warnIfMissingServer('RESEND_API_KEY')
     return null
   }
-
   return new Resend(apiKey)
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  if (!isAuthorized(request)) {
+    logger.warn('check_reminders.unauthorized', { ip: request.headers.get('x-forwarded-for') })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const rl = applyRateLimit(request, 'check-reminders', { limit: 6, windowMs: 60_000 })
+  if (!rl.allowed) return rl.response!
+
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl) {
-      return NextResponse.json({ error: 'Missing NEXT_PUBLIC_SUPABASE_URL' }, { status: 500 })
-    }
-    if (!serviceKey) {
-      return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }, { status: 500 })
-    }
-
+    const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+    const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(supabaseUrl, serviceKey)
+
     const now = new Date().toISOString()
-    console.log('Checking for reminders at', now)
 
     const { data: dueRules, error: rulesError } = await supabase
       .from('reminder_rules')
@@ -38,14 +58,14 @@ export async function POST() {
       .lte('scheduled_time', now)
 
     if (rulesError) {
-      return NextResponse.json({ error: rulesError.message }, { status: 500 })
+      logger.error('check_reminders.rules_query_failed', { message: rulesError.message })
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 
     if (!dueRules || dueRules.length === 0) {
-      return NextResponse.json({ message: 'No reminders due', sent: 0 })
+      return NextResponse.json({ ok: true, sent: 0, due: 0 })
     }
 
-    console.log('Found due rules:', dueRules.length)
     const resend = getResend()
     let sentCount = 0
 
@@ -62,25 +82,22 @@ export async function POST() {
         await sendMessengerReminder(rule, talk, supabase)
         sentCount++
       } else if (channel === 'messenger') {
-        console.log(`Talk ${talk.id} uses messenger but speaker has not opted in.`)
+        logger.info('check_reminders.skip_messenger_optin', { talkId: talk.id })
       } else if (channel === 'telegram' && talk.telegram_chat_id && talk.telegram_opted_in) {
         await sendTelegramReminder(rule, talk, supabase)
         sentCount++
       } else if (channel === 'telegram') {
-        console.log(`Talk ${talk.id} uses telegram but speaker has not opted in.`)
+        logger.info('check_reminders.skip_telegram_optin', { talkId: talk.id })
       }
     }
 
-    return NextResponse.json({ message: 'Done', sent: sentCount })
+    return NextResponse.json({ ok: true, sent: sentCount, due: dueRules.length })
   } catch (error) {
-    console.error('Error:', error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal error' }, { status: 500 })
+    return genericError('check-reminders', error)
   }
 }
 
 async function sendEmailReminder(rule: any, talk: any, supabase: any, resend: Resend | null) {
-  console.log('Processing email for talk:', talk.speaker_name)
-
   const tz = process.env.NEXT_PUBLIC_TIMEZONE || 'Asia/Manila'
   const talkDate = new Date(talk.talk_date)
   const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
@@ -147,23 +164,22 @@ async function sendEmailReminder(rule: any, talk: any, supabase: any, resend: Re
       if (sendError) {
         throw new Error(sendError.message)
       }
-
-      console.log('Email sent to:', talk.speaker_email)
+    } else {
+      logger.warn('check_reminders.resend_unavailable_skip_update', { ruleId: rule.id })
+      return
     }
 
     await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
     await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Email' })
   } catch (emailError) {
-    console.error('Email error:', emailError)
+    logger.error('check_reminders.email_failed', { ruleId: rule.id, message: emailError instanceof Error ? emailError.message : 'unknown' })
   }
 }
 
 async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
-  console.log('Processing messenger for talk:', talk.speaker_name)
-
   const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   if (!PAGE_ACCESS_TOKEN) {
-    console.error('Missing MESSENGER_PAGE_ACCESS_TOKEN')
+    logger.error('check_reminders.messenger_token_missing', { ruleId: rule.id })
     return
   }
 
@@ -194,24 +210,21 @@ async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Meta Send API error:', JSON.stringify(errorData))
+      logger.error('check_reminders.messenger_api_error', { ruleId: rule.id, status: response.status })
       return
     }
 
-    console.log('Messenger message sent to:', talk.speaker_name)
     await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
     await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Messenger' })
   } catch (error) {
-    console.error('Messenger error:', error)
+    logger.error('check_reminders.messenger_failed', { ruleId: rule.id, message: error instanceof Error ? error.message : 'unknown' })
   }
 }
 
 async function sendTelegramReminder(rule: any, talk: any, supabase: any) {
-  console.log('Processing telegram for talk:', talk.speaker_name)
-
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
   if (!TELEGRAM_BOT_TOKEN) {
-    console.error('Missing TELEGRAM_BOT_TOKEN')
+    logger.error('check_reminders.telegram_token_missing', { ruleId: rule.id })
     return
   }
 
@@ -234,18 +247,17 @@ async function sendTelegramReminder(rule: any, talk: any, supabase: any) {
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Telegram Send API error:', JSON.stringify(errorData))
+      logger.error('check_reminders.telegram_api_error', { ruleId: rule.id, status: response.status })
       return
     }
 
-    console.log('Telegram message sent to:', talk.speaker_name)
     await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
     await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Telegram' })
   } catch (error) {
-    console.error('Telegram error:', error)
+    logger.error('check_reminders.telegram_failed', { ruleId: rule.id, message: error instanceof Error ? error.message : 'unknown' })
   }
 }
 
-export async function GET() {
-  return POST()
+export async function GET(request: Request) {
+  return POST(request)
 }

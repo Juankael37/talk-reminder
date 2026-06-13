@@ -1,14 +1,40 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireEnv, getOptionalEnv } from '@/lib/env'
+import { logger } from '@/lib/logger'
+import {
+  verifyMetaSignature,
+  clampText,
+  normalizeEmail,
+} from '@/lib/webhook-security'
+import {
+  methodNotAllowed,
+  applyRateLimit,
+  genericError,
+} from '@/lib/api-guard'
 
 export const dynamic = 'force-dynamic'
 
-const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+type MessengerEntry = {
+  messaging?: Array<{
+    sender?: { id?: string }
+    message?: { text?: string }
+  }>
+}
+
+type MessengerBody = {
+  object?: string
+  entry?: MessengerEntry[]
+}
+
 const VERIFY_TOKEN = process.env.MESSENGER_VERIFY_TOKEN
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
+const APP_SECRET = getOptionalEnv('MESSENGER_APP_SECRET')
 
 export async function GET(request: Request) {
+  const rl = applyRateLimit(request, 'messenger-webhook-get', { limit: 10, windowMs: 60_000 })
+  if (!rl.allowed) return rl.response!
+
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('hub.mode')
   const token = searchParams.get('hub.verify_token')
@@ -16,114 +42,137 @@ export async function GET(request: Request) {
 
   if (mode && token) {
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      console.log('WEBHOOK_VERIFIED')
-      return new NextResponse(challenge, { status: 200 })
-    } else {
-      return new NextResponse('Forbidden', { status: 403 })
+      logger.info('messenger.webhook_verified')
+      return new NextResponse(challenge ?? '', { status: 200 })
     }
+    return new NextResponse('Forbidden', { status: 403 })
   }
 
   return new NextResponse('Bad Request', { status: 400 })
 }
 
 export async function POST(request: Request) {
+  const rl = applyRateLimit(request, 'messenger-webhook-post', { limit: 60, windowMs: 60_000 })
+  if (!rl.allowed) return rl.response!
+
+  if (!APP_SECRET) {
+    logger.error('messenger.app_secret_missing')
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+
+  const rawBody = await request.text()
+  const sigHeader = request.headers.get('x-hub-signature-256')
+
+  if (!verifyMetaSignature(rawBody, sigHeader, APP_SECRET)) {
+    logger.warn('messenger.signature_invalid')
+    return new NextResponse('Forbidden', { status: 403 })
+  }
+
+  let body: MessengerBody
   try {
-    const body = await request.json()
+    body = JSON.parse(rawBody) as MessengerBody
+  } catch {
+    return new NextResponse('Bad Request', { status: 400 })
+  }
 
-    if (body.object === 'page') {
-      for (const entry of body.entry) {
-        const webhook_event = entry.messaging?.[0]
-        if (!webhook_event) continue
+  if (body?.object !== 'page') {
+    return new NextResponse('Not Found', { status: 404 })
+  }
 
-        const sender_psid = webhook_event.sender.id
+  try {
+    for (const entry of body.entry ?? []) {
+      const webhook_event = entry.messaging?.[0]
+      if (!webhook_event) continue
 
-        if (webhook_event.message && webhook_event.message.text) {
-          await handleMessage(sender_psid, webhook_event.message.text)
-        }
+      const sender_psid = webhook_event.sender?.id
+      if (typeof sender_psid !== 'string' || !sender_psid) continue
+
+      const text = clampText(webhook_event.message?.text, 320)
+      if (text) {
+        await handleMessage(sender_psid, text)
       }
-      return new NextResponse('EVENT_RECEIVED', { status: 200 })
-    } else {
-      return new NextResponse('Not Found', { status: 404 })
     }
+    return new NextResponse('EVENT_RECEIVED', { status: 200 })
   } catch (error) {
-    console.error('Webhook POST Error:', error)
-    return new NextResponse('Internal Error', { status: 500 })
+    return genericError('messenger-webhook', error)
   }
 }
 
 async function handleMessage(sender_psid: string, received_message: string) {
-  const email = received_message.trim().toLowerCase()
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('Missing Supabase credentials')
+  const email = normalizeEmail(received_message)
+  if (!email) {
+    await sendMessage(sender_psid, 'Please send a valid email address to opt in for reminders.')
     return
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+  const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+  const supabase = createClient(supabaseUrl, serviceKey)
 
-  // Try to find a talk with this email (case-insensitive)
   const { data: talks, error } = await supabase
     .from('talks')
-    .select('*')
+    .select('id, talk_title')
     .ilike('speaker_email', email)
     .eq('notification_channel', 'messenger')
+    .limit(5)
 
   if (error) {
-    console.error('Supabase search error:', error)
+    logger.error('messenger.search_failed', { message: error.message })
     await sendMessage(sender_psid, 'Sorry, an internal error occurred while processing your request. Please try again later.')
     return
   }
 
   if (talks && talks.length > 0) {
-    // Update the talks with the PSID
-    const talkIds = talks.map(t => t.id)
+    const talkIds = talks.map((t: { id: string }) => t.id)
     const { error: updateError } = await supabase
       .from('talks')
       .update({ messenger_psid: sender_psid, messenger_opted_in: true })
       .in('id', talkIds)
 
     if (updateError) {
-      console.error('Supabase update error:', updateError)
+      logger.error('messenger.update_failed', { message: updateError.message })
       await sendMessage(sender_psid, 'Sorry, an error occurred while saving your opt-in. Please try again later.')
       return
     }
 
-    const talkTitles = talks.map(t => t.talk_title || 'your talk').join(' & ')
+    const talkTitles = talks.map((t: { talk_title: string | null }) => t.talk_title || 'your talk').join(' & ')
     await sendMessage(sender_psid, `Successfully opted in for reminders for: ${talkTitles}! 🎉 We will message you here when your reminders are due.`)
   } else {
-    // No match found
-    await sendMessage(sender_psid, `Sorry, we couldn't find a scheduled talk for the email address "${email}". Please check for typos and try sending it again.`)
+    await sendMessage(sender_psid, `Sorry, we couldn't find a scheduled talk for that email address. Please check for typos and try sending it again.`)
   }
 }
 
 async function sendMessage(sender_psid: string, text: string) {
   if (!PAGE_ACCESS_TOKEN) {
-    console.error('Missing PAGE_ACCESS_TOKEN')
+    logger.error('messenger.token_missing')
     return
   }
 
   const requestBody = {
     messaging_type: 'RESPONSE',
-    recipient: {
-      id: sender_psid
-    },
-    message: {
-      text: text
-    }
+    recipient: { id: sender_psid },
+    message: { text: text.slice(0, 2000) },
   }
 
   try {
     const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Meta Send API error:', JSON.stringify(errorData))
+      logger.error('messenger.send_api_error', { status: response.status })
     }
   } catch (error) {
-    console.error('Error sending message:', error)
+    logger.error('messenger.send_failed', { message: error instanceof Error ? error.message : 'unknown' })
   }
+}
+
+export async function PUT() {
+  return methodNotAllowed(['GET', 'POST'])
+}
+
+export async function DELETE() {
+  return methodNotAllowed(['GET', 'POST'])
 }
