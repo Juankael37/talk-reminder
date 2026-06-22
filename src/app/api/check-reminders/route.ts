@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { requireEnv, warnIfMissingServer } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { timingSafeEqualStr } from '@/lib/webhook-security'
@@ -10,6 +10,30 @@ import {
 } from '@/lib/api-guard'
 
 export const dynamic = 'force-dynamic'
+
+type TalkRow = {
+  id: string
+  user_id: string
+  speaker_name: string
+  talk_title: string | null
+  talk_date: string
+  notification_channel: string
+  speaker_email: string | null
+  messenger_psid: string | null
+  messenger_opted_in: boolean | null
+  telegram_chat_id: string | null
+  telegram_opted_in: boolean | null
+}
+
+type ReminderRuleRow = {
+  id: string
+  talk_id: string
+  offset_label: string
+  offset_interval: string
+  scheduled_time: string
+  is_sent: boolean
+  talks: TalkRow | null
+}
 
 async function isAuthorized(request: Request): Promise<boolean> {
   const expected = process.env.CRON_SECRET
@@ -58,6 +82,96 @@ const getResend = () => {
   return new Resend(apiKey)
 }
 
+function tz(): string {
+  return process.env.NEXT_PUBLIC_TIMEZONE || 'Asia/Manila'
+}
+
+function formatTalkDate(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: tz(),
+  })
+}
+
+function formatTalkTime(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+    timeZone: tz(),
+  })
+}
+
+const organizerNotifiedForRule = new Set<string>()
+
+async function fetchOrganizerEmail(
+  supabase: SupabaseAny,
+  userId: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.admin.getUserById(userId)
+    if (error || !data?.user?.email) return null
+    return data.user.email
+  } catch (err) {
+    logger.error('check_reminders.organizer_lookup_failed', {
+      userId,
+      message: err instanceof Error ? err.message : 'unknown',
+    })
+    return null
+  }
+}
+
+async function notifyOrganizerOfFailure(
+  resend: Resend | null,
+  toEmail: string,
+  talk: TalkRow,
+  rule: ReminderRuleRow,
+  reason: string
+): Promise<void> {
+  if (!resend) return
+  const subject = `Reminder failed: ${talk.speaker_name} (${rule.offset_label})`
+  const text = [
+    `A scheduled reminder could not be delivered.`,
+    ``,
+    `Talk: ${talk.talk_title || '(untitled)'}`,
+    `Speaker: ${talk.speaker_name} <${talk.speaker_email || 'no email'}`,
+    `Scheduled: ${formatTalkDate(rule.scheduled_time)} at ${formatTalkTime(rule.scheduled_time)}`,
+    `Offset: ${rule.offset_label}`,
+    `Channel: ${talk.notification_channel}`,
+    ``,
+    `Reason: ${reason}`,
+    ``,
+    `Please contact the speaker manually if needed.`,
+    `— Talk Reminder by Ortuma`,
+  ].join('\n')
+  try {
+    const { error } = await resend.emails.send({
+      from: 'Talk Reminder <reminder-noreply@ortuma.site>',
+      to: toEmail,
+      subject,
+      text,
+    })
+    if (error) {
+      logger.error('check_reminders.organizer_email_failed', {
+        ruleId: rule.id,
+        message: error.message,
+      })
+    } else {
+      logger.info('check_reminders.organizer_notified', { ruleId: rule.id })
+    }
+  } catch (err) {
+    logger.error('check_reminders.organizer_email_threw', {
+      ruleId: rule.id,
+      message: err instanceof Error ? err.message : 'unknown',
+    })
+  }
+}
+
 export async function POST(request: Request) {
   if (!(await isAuthorized(request))) {
     logger.warn('check_reminders.unauthorized', { ip: request.headers.get('x-forwarded-for') })
@@ -91,40 +205,186 @@ export async function POST(request: Request) {
 
     const resend = getResend()
     let sentCount = 0
+    let failedCount = 0
 
-    for (const rule of dueRules) {
-      const talk = (rule as any).talks
+    for (const raw of dueRules) {
+      const rule = raw as ReminderRuleRow
+      const talk = rule.talks
       if (!talk) continue
 
       const channel = talk.notification_channel || 'email'
 
-      if (channel === 'email' && talk.speaker_email) {
-        await sendEmailReminder(rule, talk, supabase, resend)
-        sentCount++
-      } else if (channel === 'messenger' && talk.messenger_psid && talk.messenger_opted_in) {
-        await sendMessengerReminder(rule, talk, supabase)
-        sentCount++
+      if (channel === 'email') {
+        if (!talk.speaker_email) {
+          await recordFailureAndNotify(
+            supabase, resend, rule, talk,
+            'no_recipient',
+            'Speaker has no email address on file.'
+          )
+          failedCount++
+          continue
+        }
+        const ok = await sendEmailReminder(rule, talk, supabase, resend)
+        if (ok) sentCount++
+        else {
+          await recordFailureAndNotify(
+            supabase, resend, rule, talk,
+            'email_dispatch_failed',
+            'Email provider returned an error.'
+          )
+          failedCount++
+        }
       } else if (channel === 'messenger') {
-        logger.info('check_reminders.skip_messenger_optin', { talkId: talk.id })
-      } else if (channel === 'telegram' && talk.telegram_chat_id && talk.telegram_opted_in) {
-        await sendTelegramReminder(rule, talk, supabase)
-        sentCount++
+        if (!talk.messenger_opted_in || !talk.messenger_psid) {
+          await recordFailureAndNotify(
+            supabase, resend, rule, talk,
+            'messenger_optin_missing',
+            'Speaker has not opted in to Messenger yet. Ask them to send their email to your Facebook Page.'
+          )
+          failedCount++
+          continue
+        }
+        const ok = await sendMessengerReminder(rule, talk, supabase)
+        if (ok) sentCount++
+        else {
+          await recordFailureAndNotify(
+            supabase, resend, rule, talk,
+            'messenger_dispatch_failed',
+            'Messenger API rejected the send.'
+          )
+          failedCount++
+        }
       } else if (channel === 'telegram') {
-        logger.info('check_reminders.skip_telegram_optin', { talkId: talk.id })
+        if (!talk.telegram_opted_in || !talk.telegram_chat_id) {
+          await recordFailureAndNotify(
+            supabase, resend, rule, talk,
+            'telegram_optin_missing',
+            'Speaker has not opted in to Telegram yet. Ask them to message your bot with their email.'
+          )
+          failedCount++
+          continue
+        }
+        const ok = await sendTelegramReminder(rule, talk, supabase)
+        if (ok) sentCount++
+        else {
+          await recordFailureAndNotify(
+            supabase, resend, rule, talk,
+            'telegram_dispatch_failed',
+            'Telegram API rejected the send.'
+          )
+          failedCount++
+        }
+      } else {
+        await recordFailureAndNotify(
+          supabase, resend, rule, talk,
+          'unknown_channel',
+          `Unknown notification channel "${channel}".`
+        )
+        failedCount++
       }
     }
 
-    return NextResponse.json({ ok: true, sent: sentCount, due: dueRules.length })
+    organizerNotifiedForRule.clear()
+
+    return NextResponse.json({
+      ok: true,
+      sent: sentCount,
+      failed: failedCount,
+      due: dueRules.length,
+    })
   } catch (error) {
     return genericError('check-reminders', error)
   }
 }
 
-async function sendEmailReminder(rule: any, talk: any, supabase: any, resend: Resend | null) {
-  const tz = process.env.NEXT_PUBLIC_TIMEZONE || 'Asia/Manila'
-  const talkDate = new Date(talk.talk_date)
-  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
-  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', timeZone: tz })
+type SupabaseAny = SupabaseClient
+
+async function recordFailureAndNotify(
+  supabase: SupabaseAny,
+  resend: Resend | null,
+  rule: ReminderRuleRow,
+  talk: TalkRow,
+  kind: string,
+  message: string
+): Promise<void> {
+  try {
+    const { error: logError } = await supabase.from('reminder_logs').insert({
+      rule_id: rule.id,
+      response: `Failed: ${message}`,
+      status: 'failed',
+      error_message: message,
+      channel: talk.notification_channel,
+      recipient: recipientOf(talk),
+      kind,
+      organizer_notified_at: null,
+    })
+    if (logError) {
+      logger.error('check_reminders.log_insert_failed', {
+        ruleId: rule.id,
+        message: logError.message,
+      })
+    }
+  } catch (err) {
+    logger.error('check_reminders.log_insert_threw', {
+      ruleId: rule.id,
+      message: err instanceof Error ? err.message : 'unknown',
+    })
+  }
+
+  if (!resend) return
+  if (organizerNotifiedForRule.has(rule.id)) return
+  organizerNotifiedForRule.add(rule.id)
+
+  const email = await fetchOrganizerEmail(supabase, talk.user_id)
+  if (!email) {
+    logger.warn('check_reminders.no_organizer_email', { ruleId: rule.id, userId: talk.user_id })
+    return
+  }
+  await notifyOrganizerOfFailure(resend, email, talk, rule, message)
+
+  try {
+    await supabase
+      .from('reminder_logs')
+      .update({ organizer_notified_at: new Date().toISOString() })
+      .eq('rule_id', rule.id)
+      .eq('status', 'failed')
+      .is('organizer_notified_at', null)
+  } catch (err) {
+    logger.error('check_reminders.organizer_notified_stamp_failed', {
+      ruleId: rule.id,
+      message: err instanceof Error ? err.message : 'unknown',
+    })
+  }
+}
+
+function recipientOf(talk: TalkRow): string {
+  if (talk.notification_channel === 'messenger') return 'messenger:hidden'
+  if (talk.notification_channel === 'telegram') return 'telegram:hidden'
+  return talk.speaker_email || ''
+}
+
+async function sendEmailReminder(
+  rule: ReminderRuleRow,
+  talk: TalkRow,
+  supabase: SupabaseAny,
+  resend: Resend | null
+): Promise<boolean> {
+  if (!resend) {
+    logger.warn('check_reminders.resend_unavailable_skip_update', { ruleId: rule.id })
+    await supabase.from('reminder_logs').insert({
+      rule_id: rule.id,
+      response: 'Skipped: Resend not configured',
+      status: 'skipped',
+      error_message: 'RESEND_API_KEY is not set',
+      channel: 'email',
+      recipient: talk.speaker_email,
+      kind: 'resend_unconfigured',
+    })
+    return false
+  }
+
+  const formattedDate = formatTalkDate(talk.talk_date)
+  const formattedTime = formatTalkTime(talk.talk_date)
 
   const htmlContent = `<!DOCTYPE html>
 <html>
@@ -175,85 +435,112 @@ async function sendEmailReminder(rule: any, talk: any, supabase: any, resend: Re
   const plainText = `Hi ${talk.speaker_name},\n\nReminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\nDate: ${formattedDate}\nTime: ${formattedTime}\nReminder: ${rule.offset_label}\n\n- Sent via Talk Reminder by Ortuma`
 
   try {
-    if (resend) {
-      const { error: sendError } = await resend.emails.send({
-        from: 'Talk Reminder <reminder-noreply@ortuma.site>',
-        to: talk.speaker_email,
-        subject: `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
-        html: htmlContent,
-        text: plainText,
-      })
+    const { error: sendError } = await resend.emails.send({
+      from: 'Talk Reminder <reminder-noreply@ortuma.site>',
+      to: talk.speaker_email!,
+      subject: `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up`,
+      html: htmlContent,
+      text: plainText,
+    })
 
-      if (sendError) {
-        throw new Error(sendError.message)
-      }
-    } else {
-      logger.warn('check_reminders.resend_unavailable_skip_update', { ruleId: rule.id })
-      return
+    if (sendError) {
+      throw new Error(sendError.message)
     }
 
     await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
-    await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Email' })
+    await supabase.from('reminder_logs').insert({
+      rule_id: rule.id,
+      response: 'Sent via Email',
+      status: 'success',
+      channel: 'email',
+      recipient: talk.speaker_email,
+      kind: 'email_dispatch',
+    })
+    return true
   } catch (emailError) {
-    logger.error('check_reminders.email_failed', { ruleId: rule.id, message: emailError instanceof Error ? emailError.message : 'unknown' })
+    logger.error('check_reminders.email_failed', {
+      ruleId: rule.id,
+      message: emailError instanceof Error ? emailError.message : 'unknown',
+    })
+    return false
   }
 }
 
-async function sendMessengerReminder(rule: any, talk: any, supabase: any) {
+async function sendMessengerReminder(
+  rule: ReminderRuleRow,
+  talk: TalkRow,
+  supabase: SupabaseAny
+): Promise<boolean> {
   const PAGE_ACCESS_TOKEN = process.env.MESSENGER_PAGE_ACCESS_TOKEN
   if (!PAGE_ACCESS_TOKEN) {
     logger.error('check_reminders.messenger_token_missing', { ruleId: rule.id })
-    return
+    return false
   }
 
-  const tz = process.env.NEXT_PUBLIC_TIMEZONE || 'Asia/Manila'
-  const talkDate = new Date(talk.talk_date)
-  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
-  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', timeZone: tz })
+  const formattedDate = formatTalkDate(talk.talk_date)
+  const formattedTime = formatTalkTime(talk.talk_date)
 
   const messageText = `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up\n\nHi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\n📅 Date: ${formattedDate}\n🕐 Time: ${formattedTime}\n⏱ Reminder: ${rule.offset_label}\n\nWe're looking forward to your presentation! (Sent via Talk Reminder by Ortuma)`
 
   const requestBody = {
     messaging_type: 'RESPONSE',
     recipient: {
-      id: talk.messenger_psid
+      id: talk.messenger_psid,
     },
     message: {
-      text: messageText
-    }
+      text: messageText,
+    },
   }
 
   try {
     const response = await fetch(`https://graph.facebook.com/v19.0/me/messages?access_token=${PAGE_ACCESS_TOKEN}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      logger.error('check_reminders.messenger_api_error', { ruleId: rule.id, status: response.status, errorMessage: JSON.stringify(errorData) })
-      return
+      logger.error('check_reminders.messenger_api_error', {
+        ruleId: rule.id,
+        status: response.status,
+        errorMessage: JSON.stringify(errorData),
+      })
+      return false
     }
 
     await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
-    await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Messenger' })
+    await supabase.from('reminder_logs').insert({
+      rule_id: rule.id,
+      response: 'Sent via Messenger',
+      status: 'success',
+      channel: 'messenger',
+      recipient: 'messenger:hidden',
+      kind: 'messenger_dispatch',
+    })
+    return true
   } catch (error) {
-    logger.error('check_reminders.messenger_failed', { ruleId: rule.id, message: error instanceof Error ? error.message : 'unknown' })
+    logger.error('check_reminders.messenger_failed', {
+      ruleId: rule.id,
+      message: error instanceof Error ? error.message : 'unknown',
+    })
+    return false
   }
 }
 
-async function sendTelegramReminder(rule: any, talk: any, supabase: any) {
+async function sendTelegramReminder(
+  rule: ReminderRuleRow,
+  talk: TalkRow,
+  supabase: SupabaseAny
+): Promise<boolean> {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
   if (!TELEGRAM_BOT_TOKEN) {
     logger.error('check_reminders.telegram_token_missing', { ruleId: rule.id })
-    return
+    return false
   }
 
-  const tz = process.env.NEXT_PUBLIC_TIMEZONE || 'Asia/Manila'
-  const talkDate = new Date(talk.talk_date)
-  const formattedDate = talkDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz })
-  const formattedTime = talkDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZoneName: 'short', timeZone: tz })
+  const formattedDate = formatTalkDate(talk.talk_date)
+  const formattedTime = formatTalkTime(talk.talk_date)
 
   const messageText = `⏰ Reminder: ${talk.talk_title || 'Your Talk'} is Coming Up\n\nHi ${talk.speaker_name},\n\nThis is a friendly reminder about your upcoming talk:\n"${talk.talk_title || 'Talk'}"\n\n📅 Date: ${formattedDate}\n🕐 Time: ${formattedTime}\n⏱ Reminder: ${rule.offset_label}\n\nWe're looking forward to your presentation! (Sent via Talk Reminder by Ortuma)`
 
@@ -263,20 +550,35 @@ async function sendTelegramReminder(rule: any, talk: any, supabase: any) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: talk.telegram_chat_id,
-        text: messageText
-      })
+        text: messageText,
+      }),
     })
 
     if (!response.ok) {
-      const errorData = await response.json()
-      logger.error('check_reminders.telegram_api_error', { ruleId: rule.id, status: response.status })
-      return
+      await response.json().catch(() => ({}))
+      logger.error('check_reminders.telegram_api_error', {
+        ruleId: rule.id,
+        status: response.status,
+      })
+      return false
     }
 
     await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
-    await supabase.from('reminder_logs').insert({ rule_id: rule.id, response: 'Sent via Telegram' })
+    await supabase.from('reminder_logs').insert({
+      rule_id: rule.id,
+      response: 'Sent via Telegram',
+      status: 'success',
+      channel: 'telegram',
+      recipient: 'telegram:hidden',
+      kind: 'telegram_dispatch',
+    })
+    return true
   } catch (error) {
-    logger.error('check_reminders.telegram_failed', { ruleId: rule.id, message: error instanceof Error ? error.message : 'unknown' })
+    logger.error('check_reminders.telegram_failed', {
+      ruleId: rule.id,
+      message: error instanceof Error ? error.message : 'unknown',
+    })
+    return false
   }
 }
 
