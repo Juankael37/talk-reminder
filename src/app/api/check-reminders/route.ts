@@ -323,6 +323,15 @@ async function recordFailureAndNotify(
         ruleId: rule.id,
         message: logError.message,
       })
+    } else {
+      try {
+        await supabase.from('reminder_rules').update({ is_sent: true }).eq('id', rule.id)
+      } catch (err) {
+        logger.error('check_reminders.mark_failed_sent_threw', {
+          ruleId: rule.id,
+          message: err instanceof Error ? err.message : 'unknown',
+        })
+      }
     }
   } catch (err) {
     logger.error('check_reminders.log_insert_threw', {
@@ -333,6 +342,31 @@ async function recordFailureAndNotify(
 
   if (!resend) return
   if (organizerNotifiedForRule.has(rule.id)) return
+
+  try {
+    const { data: alreadyNotifiedRows, error: checkError } = await supabase
+      .from('reminder_logs')
+      .select('id')
+      .eq('rule_id', rule.id)
+      .eq('status', 'failed')
+      .not('organizer_notified_at', 'is', null)
+      .limit(1)
+    if (checkError) {
+      logger.error('check_reminders.organizer_check_failed', {
+        ruleId: rule.id,
+        message: checkError.message,
+      })
+      return
+    }
+    if (alreadyNotifiedRows && alreadyNotifiedRows.length > 0) return
+  } catch (err) {
+    logger.error('check_reminders.organizer_check_threw', {
+      ruleId: rule.id,
+      message: err instanceof Error ? err.message : 'unknown',
+    })
+    return
+  }
+
   organizerNotifiedForRule.add(rule.id)
 
   const email = await fetchOrganizerEmail(supabase, talk.user_id)
