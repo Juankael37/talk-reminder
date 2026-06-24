@@ -47,7 +47,7 @@ talk-reminder/
 ├── src/
 │   ├── app/                       # Next.js App Router
 │   │   ├── layout.tsx             # Root layout: Inter font, ThemeProvider
-│   │   ├── page.tsx               # Root redirect: session -> /dashboard, else /login
+│   │   ├── page.tsx               # Landing page (beta hero + mock dashboard + feature sections); redirects authed users to /dashboard
 │   │   ├── globals.css            # Tailwind v4 + theme CSS vars
 │   │   ├── login/page.tsx
 │   │   ├── signup/page.tsx
@@ -64,7 +64,8 @@ talk-reminder/
 │   │       └── telegram/webhook/route.ts       # POST (events)
 │   ├── components/
 │   │   ├── ThemeProvider.tsx      # 'use client' — light/dark context, localStorage
-│   │   └── TextLogo.tsx           # "Talk Reminder" wordmark (orange + dark)
+│   │   ├── TextLogo.tsx           # "Talk Reminder" wordmark (orange + dark)
+│   │   └── BetaBanner.tsx         # 'use client' — dismissable beta banner (localStorage-persisted)
 │   ├── lib/
 │   │   ├── datetime.ts            # parseInTz/offsetDate/resolveTz — TZ-aware form parsing
 │   │   └── supabase/
@@ -161,11 +162,13 @@ Indexes on `reminder_logs`: `rule_id`, `created_at DESC`, partial index on `stat
 
 | Endpoint | Methods | Purpose |
 |---|---|---|
-| `/api/check-reminders` | `GET`, `POST` | Auth via `Bearer CRON_SECRET` or user JWT. Finds `reminder_rules` where `is_sent=false` and `scheduled_time <= now`, dispatches via the talk's `notification_channel`, marks rule sent on success, writes a `reminder_logs` row with `status`/`error_message`/`channel`/`recipient`/`kind`. On failure (provider error, missing opt-in, missing email) emails the organizer via Resend with the failure reason. Per-rule dedupe of organizer emails per cron run. |
+| `/api/check-reminders` | `GET`, `POST` | Auth via `Bearer CRON_SECRET` or user JWT. Finds `reminder_rules` where `is_sent=false` and `scheduled_time <= now`, dispatches via the talk's `notification_channel`, marks rule sent on success **or permanent failure**, writes a `reminder_logs` row with `status`/`error_message`/`channel`/`recipient`/`kind`. On failure (provider error, missing opt-in, missing email) emails the organizer via Resend with the failure reason. Organizer emails are deduplicated via the `organizer_notified_at` column (persistent, not per-run). |
 | `/api/keep-alive` | `GET` | Lightweight `select count` against `talks` to keep Supabase from pausing on free tier. |
 | `/api/delete-account` | `POST` | Requires `Authorization: Bearer <jwt>`; uses service role to call `auth.admin.deleteUser`. |
 | `/api/messenger/webhook` | `GET` (hub verification) + `POST` (events) | Verifies token on GET; on POST, reads `sender.id` + text, looks up talks by `ilike(speaker_email, text)`, stores `messenger_psid` and sets `messenger_opted_in=true`. |
 | `/api/telegram/webhook` | `POST` | Same opt-in flow using Telegram `chat.id` -> `telegram_chat_id`, `telegram_opted_in=true`. |
+
+Security headers (`src/lib/security-headers.ts`): CSP includes `'self'`, `'unsafe-inline'`, and `'unsafe-eval'` (the latter required by React dev mode; production builds don't need it). Other headers: HSTS, XFO DENY, nosniff, strict referrer, restrictive Permissions-Policy, COOP same-origin, X-DNS-Prefetch-Control off.
 
 All API routes export `export const dynamic = 'force-dynamic'` and create a fresh `@supabase/supabase-js` client with the service role key (or use `@/lib/supabase/admin`).
 
@@ -178,6 +181,8 @@ All API routes export `export const dynamic = 'force-dynamic'` and create a fres
 - **Mobile:** talks table collapses to a card layout below `md`. Cards have a kebab delete button always reachable. Sidebar is a full-screen overlay on mobile.
 - **Settings:** gear icon in the dashboard header opens a Settings modal with Profile (email), Dark Mode toggle, Logout, and Delete Account (with confirm).
 - **Routing guards:** enforced in `src/lib/supabase/middleware.ts` (redirect unauthenticated users away from `/dashboard` and `/logs`, authed users away from `/login` and `/signup`).
+- **Landing page:** `src/app/page.tsx` — server component with auth redirect (authed → `/dashboard`). 8 sections: navbar, hero with mock dashboard card (desktop table / mobile cards, hardcoded data with Sent/Pending/Failed badges), how it works, "What's working in beta" (Works Now / Coming Soon columns), channel setup callout, beta CTA with honest feedback ask, footer. Runs before `<ThemeProvider>` children.
+- **BetaBanner:** dismissable full-width bar above navbar (orange `#FF6B00` bg, dark text). Dismiss state persisted to localStorage key `beta-banner-dismissed`.
 - **Force dynamic:** all `'use client'` auth pages export `export const dynamic = 'force-dynamic'`.
 
 ## 9. Code Patterns to Follow
@@ -192,7 +197,7 @@ All API routes export `export const dynamic = 'force-dynamic'` and create a fres
 - **Timestamps:** always store ISO (`toISOString()`). For form input → UTC conversion use `parseInTz(dateStr, timeStr, NEXT_PUBLIC_TIMEZONE)`. Render with `toLocaleDateString` / `toLocaleTimeString` passing `timeZone: NEXT_PUBLIC_TIMEZONE` (use `resolveTz()` from `@/lib/datetime` for the default).
 - **Env access in server code:** read `process.env.X` inside the function (don't cache at module level except via lazy getters).
 - **Modal/Toast:** reuse the inline `ConfirmModal` (props: title, body, confirmLabel, danger, onCancel, onConfirm) and `Toast` (props: message, variant, onClose). Toasts auto-dismiss after 4s.
-- **Dispatcher logging:** every send attempt in `/api/check-reminders` must insert a `reminder_logs` row with `status`, `error_message`, `channel`, `recipient`, `kind`. Failures additionally trigger `recordFailureAndNotify` which emails the organizer via Resend.
+- **Dispatcher logging:** every send attempt in `/api/check-reminders` must insert a `reminder_logs` row with `status`, `error_message`, `channel`, `recipient`, `kind`. Failures additionally trigger `recordFailureAndNotify` which emails the organizer via Resend (once per rule, tracked by `organizer_notified_at`) and marks `is_sent = true` on the rule to prevent re-processing.
 - **No comments in code** — match existing style (see `CRITICAL` rule below).
 
 ## 10. Critical Rules / Guardrails
@@ -255,4 +260,5 @@ supabase db push
 - Dashboard talk delete uses optimistic state update (removes from list immediately, reverts on error). No `window.location.reload()`.
 - Form date/time inputs are interpreted as `NEXT_PUBLIC_TIMEZONE` (Asia/Manila by default), not the browser's local TZ. Always use `parseInTz` from `@/lib/datetime` — never `new Date(\`${date}T${time}\`)` which silently uses browser TZ.
 - `reminder_logs` rows from before migration 005 were backfilled with `status='success'` and `kind='legacy'` so legacy data still renders cleanly in `/logs`.
-- Organizer failure emails are deduplicated per `(rule_id)` per cron run via an in-memory `Set`, so a rule that fails repeatedly won't flood the organizer's inbox during a single 15-minute window.
+- Organizer failure emails are deduplicated persistently via the `organizer_notified_at` column in `reminder_logs` — only the first failure per rule triggers an email. Additionally, `recordFailureAndNotify` sets `is_sent = true` on the rule so the cron never re-processes it.
+- CSP `script-src` includes `'unsafe-eval'` because React dev mode requires `eval()` for debugging features. Production builds don't need it. If you remove it, the dev console will log `eval() is not supported in this environment` errors.
