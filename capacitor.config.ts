@@ -8,6 +8,9 @@ const config: CapacitorConfig = {
     url: 'https://talk-reminder.vercel.app',
     androidScheme: 'https'
   },
+  android: {
+    appendUserAgent: 'capacitor'
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
