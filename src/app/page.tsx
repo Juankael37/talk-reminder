@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { TextLogo } from '@/components/TextLogo'
 import { BetaBanner } from '@/components/BetaBanner'
@@ -85,6 +86,13 @@ export default async function Home() {
 
   if (session?.user) {
     redirect('/dashboard')
+  }
+
+  const userAgent = (await headers()).get('user-agent') || ''
+  const isNativeApp = /capacitor/i.test(userAgent)
+
+  if (isNativeApp) {
+    redirect('/login')
   }
 
   return (
